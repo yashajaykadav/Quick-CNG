@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "346711918519",
+    "project_id": "quick-cng",
+    "storage_bucket": "quick-cng.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:346711918519:android:803e848ce7d3b93a3c8a32",
+        "android_client_info": {
+          "package_name": "com.yash.quickcng"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWl5CsMoilBdO5Gcvj7EANBfV1dRQoi9k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
