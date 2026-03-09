@@ -1,0 +1,72 @@
+name: Flutter Android CI/CD
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-android:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repo
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Install Flutter
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.8'
+
+      # 3️⃣ Install dependencies
+      - name: Install dependencies
+        run: flutter pub get
+
+      # 4️⃣ Analyze code (optional)
+      - name: Analyze code
+        run: flutter analyze
+
+      # 5️⃣ Increment version code
+      - name: Increment version code
+        id: version
+        run: |
+          # Extract current versionCode from pubspec.yaml
+          current_code=$(grep "version:" pubspec.yaml | sed 's/.*+//')
+          new_code=$((current_code + 1))
+          echo "new_version_code=$new_code" >> $GITHUB_OUTPUT
+          echo "Incremented version code: $new_code"
+
+          # Update pubspec.yaml
+          sed -i "s/+${current_code}/+${new_code}/" pubspec.yaml
+
+      # 6️⃣ Build APK
+      - name: Build APK
+        run: flutter build apk --release
+
+      # 7️⃣ Rename APK dynamically with version code
+      - name: Rename APK
+        run: |
+          mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-release-v${{ steps.version.outputs.new_version_code }}.apk
+
+      # 8️⃣ Upload APK as artifact
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release-apk-v${{ steps.version.outputs.new_version_code }}
+          path: build/app/outputs/flutter-apk/app-release-v${{ steps.version.outputs.new_version_code }}.apk
+
+      # 9️⃣ Deploy to Play Store Internal Test
+      - name: Deploy to Play Store Internal Test
+        if: github.ref == 'refs/heads/main'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: ${{ secrets.PLAY_STORE_JSON }}
+          packageName: com.yourcompany.yourapp
+          releaseFiles: build/app/outputs/flutter-apk/app-release-v${{ steps.version.outputs.new_version_code }}.apk
+          track: internal
