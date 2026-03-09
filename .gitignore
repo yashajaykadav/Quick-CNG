@@ -43,3 +43,30 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# -------- SENSITIVE CREDENTIALS & FIREBASE CONFIGS -------- #
+# Firebase configs
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+macos/Runner/GoogleService-Info.plist
+web/firebase-config.js
+lib/firebase_options.dart
+firebase-debug.log
+firebase-debug.*.log
+
+
+# Android Keystore specific files
+android/key.properties
+*.jks
+*.keystore
+
+# macOS & iOS Certificates
+*.mobileprovision
+*.cer
+*.cert
+*.p12
+
+# Environment Variables
+.env
+.env.*
+*.env
