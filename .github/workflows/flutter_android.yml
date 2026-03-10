@@ -29,20 +29,19 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # 1. Reconstruct all configuration files from Secrets
-    # 1. Reconstruct all configuration files from Secrets
       - name: Reconstruct Configuration Files
         run: |
-          # Use single-quoted EOF to prevent shell expansion of Dart code
           cat <<'EOF' > lib/firebase_options.dart
           ${{ secrets.FIREBASE_OPTIONS }}
           EOF
+
+          cat <<'EOF' > android/app/google-services.json
+          ${{ secrets.GOOGLE_SERVICES_JSON }}
+          EOF
           
-          # Create the .jks file from base64
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
           
-          # Create key.properties for signing
-          cat <<'EOF' > android/key.properties
+          cat <<EOF > android/key.properties
           keyAlias=${{ secrets.KEY_ALIAS }}
           keyPassword=${{ secrets.KEY_PASSWORD }}
           storePassword=${{ secrets.STORE_PASSWORD }}
@@ -52,15 +51,17 @@ jobs:
       - name: Analyze code
         run: flutter analyze
 
+      - name: Clean project
+        run: flutter clean
+
       - name: Increment version code
         id: version
         run: |
-          current_code=$(grep "version:" pubspec.yaml | sed 's/.*+//')
+          current_code=$(grep 'version:' pubspec.yaml | awk -F '+' '{print $2}')
           new_code=$((current_code + 1))
           echo "new_version_code=$new_code" >> $GITHUB_OUTPUT
           sed -i "s/+${current_code}/+${new_code}/" pubspec.yaml
 
-      # 2. Build the signed APK
       - name: Build APK
         run: flutter build apk --release
 
@@ -68,7 +69,6 @@ jobs:
         run: |
           mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-release-v${{ steps.version.outputs.new_version_code }}.apk
 
-      # 3. Upload the APK as a GitHub Artifact
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
