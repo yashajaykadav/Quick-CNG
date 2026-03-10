@@ -53,6 +53,7 @@ web/firebase-config.js
 lib/firebase_options.dart
 firebase-debug.log
 firebase-debug.*.log
+android/key.properties
 
 
 # Android Keystore specific files

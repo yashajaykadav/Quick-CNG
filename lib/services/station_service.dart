@@ -40,7 +40,6 @@ class StationService {
         'updatedAt': FieldValue.serverTimestamp(),
       });
     } catch (e) {
-      print('Error updating station status: $e');
       rethrow;
     }
   }
@@ -51,15 +50,16 @@ class StationService {
     return snapshot.docs.map((doc) {
       final station = Station.fromMap(doc.id, doc.data());
 
-      final distanceKm = Geolocator.distanceBetween(
-        userPosition.latitude,
-        userPosition.longitude,
-        station.latitude,
-        station.longitude,
-      ) / 1000;
+      final distanceKm =
+          Geolocator.distanceBetween(
+            userPosition.latitude,
+            userPosition.longitude,
+            station.latitude,
+            station.longitude,
+          ) /
+          1000;
 
       return station.copyWith(distance: distanceKm);
     }).toList();
   }
-
 }
