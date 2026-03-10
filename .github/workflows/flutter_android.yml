@@ -2,20 +2,24 @@ name: Flutter Android CI/CD
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   build-android:
-    name: Build Android APK
+    name: Build Signed APK
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -25,10 +29,20 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      # 3.5️⃣ Create Firebase Options file from Secret
-      - name: Create firebase_options.dart
+      # 1. Reconstruct all configuration files from Secrets
+      - name: Reconstruct Configuration Files
         run: |
-          echo "${{ secrets.FIREBASE_OPTIONS_BASE64 }}" | base64 --decode > lib/firebase_options.dart
+          # Create Firebase Options (using the raw text secret you pasted)
+          echo "${{ secrets.FIREBASE_OPTIONS }}" > lib/firebase_options.dart
+          
+          # Create the .jks file from base64
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
+          
+          # Create key.properties for signing
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" > android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> android/key.properties
+          echo "storeFile=upload-keystore.jks" >> android/key.properties
 
       - name: Analyze code
         run: flutter analyze
@@ -41,6 +55,7 @@ jobs:
           echo "new_version_code=$new_code" >> $GITHUB_OUTPUT
           sed -i "s/+${current_code}/+${new_code}/" pubspec.yaml
 
+      # 2. Build the signed APK
       - name: Build APK
         run: flutter build apk --release
 
@@ -48,17 +63,9 @@ jobs:
         run: |
           mv build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/app-release-v${{ steps.version.outputs.new_version_code }}.apk
 
-      - name: Upload APK
+      # 3. Upload the APK as a GitHub Artifact
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release-apk-v${{ steps.version.outputs.new_version_code }}
           path: build/app/outputs/flutter-apk/app-release-v${{ steps.version.outputs.new_version_code }}.apk
-
-      - name: Deploy to Play Store Internal Test
-        if: github.ref == 'refs/heads/main'
-        uses: r0adkll/upload-google-play@v1
-        with:
-          serviceAccountJson: ${{ secrets.PLAY_STORE_JSON }}
-          packageName: com.yash.quickcng
-          releaseFiles: build/app/outputs/flutter-apk/app-release-v${{ steps.version.outputs.new_version_code }}.apk
-          track: internal
