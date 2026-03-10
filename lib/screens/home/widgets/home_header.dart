@@ -37,7 +37,7 @@ class HomeHeader extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(1),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(1),
+                  color: Colors.white.withAlpha(250),
                   borderRadius: BorderRadius.circular(15),
                 ),
                 child: Image.asset(

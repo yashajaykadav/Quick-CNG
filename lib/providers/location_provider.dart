@@ -28,10 +28,13 @@ final userLocationProvider = FutureProvider<Position>((ref) async {
     throw LocationException('Location permissions are permanently denied');
   }
 
-  // Get current position
-  return await Geolocator.getCurrentPosition(
-    desiredAccuracy: LocationAccuracy.high,
+  // Use LocationSettings to resolve the deprecation warning
+  const LocationSettings locationSettings = LocationSettings(
+    accuracy: LocationAccuracy.high,
+    distanceFilter: 100, // Minimum distance (in meters) before an update is triggered
   );
+
+  return await Geolocator.getCurrentPosition(locationSettings: locationSettings);
 });
 
 // Custom exception for location errors

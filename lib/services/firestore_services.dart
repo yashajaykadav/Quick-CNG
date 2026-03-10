@@ -287,7 +287,7 @@ class FirestoreService {
 
       final totalReports = stations.fold<int>(
         0,
-        (sum, station) => sum + station.reportCount,
+        (sums, station) => sums + station.reportCount,
       );
 
       return {
