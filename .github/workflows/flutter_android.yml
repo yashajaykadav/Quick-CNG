@@ -30,11 +30,11 @@ jobs:
         run: flutter pub get
 
       # 1. Reconstruct all configuration files from Secrets
-     # 1. Reconstruct all configuration files from Secrets
+    # 1. Reconstruct all configuration files from Secrets
       - name: Reconstruct Configuration Files
         run: |
-          # Create Firebase Options using a 'Heredoc' to prevent character corruption
-          cat <<EOF > lib/firebase_options.dart
+          # Use single-quoted EOF to prevent shell expansion of Dart code
+          cat <<'EOF' > lib/firebase_options.dart
           ${{ secrets.FIREBASE_OPTIONS }}
           EOF
           
@@ -42,7 +42,7 @@ jobs:
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android/app/upload-keystore.jks
           
           # Create key.properties for signing
-          cat <<EOF > android/key.properties
+          cat <<'EOF' > android/key.properties
           keyAlias=${{ secrets.KEY_ALIAS }}
           keyPassword=${{ secrets.KEY_PASSWORD }}
           storePassword=${{ secrets.STORE_PASSWORD }}
