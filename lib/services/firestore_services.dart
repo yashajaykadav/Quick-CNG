@@ -15,29 +15,27 @@ class FirestoreService {
         .collection('cng_stations')
         .orderBy('updatedAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-        .map((doc) => Station.fromMap(doc.id, doc.data()))
-        .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => Station.fromMap(doc.id, doc.data()))
+              .toList(),
+        );
   }
 
   Stream<Station?> getStation(String stationId) {
-    return _db
-        .collection('cng_stations')
-        .doc(stationId)
-        .snapshots()
-        .map((doc) {
+    return _db.collection('cng_stations').doc(stationId).snapshots().map((doc) {
       if (!doc.exists) return null;
       return Station.fromMap(doc.id, doc.data()!);
     });
   }
 
   Future<void> addReport(
-      String stationId,
-      TrafficLevel traffic, {
-        required bool isAvailable,
-        String? userName,
-        UserRole? userRole,
-      }) async {
+    String stationId,
+    TrafficLevel traffic, {
+    required bool isAvailable,
+    String? userName,
+    UserRole? userRole,
+  }) async {
     final user = _auth.currentUser;
     if (user == null) throw Exception('User not authenticated');
 
@@ -146,9 +144,11 @@ class FirestoreService {
         .orderBy('createdAt', descending: true)
         .limit(limit)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-        .map((doc) => Report.fromMap(doc.id, doc.data()))
-        .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => Report.fromMap(doc.id, doc.data()))
+              .toList(),
+        );
   }
 
   /// Create a new station (Admin only)
@@ -171,9 +171,9 @@ class FirestoreService {
 
   /// Update station details (Admin/Owner only)
   Future<void> updateStation(
-      String stationId,
-      Map<String, dynamic> updates,
-      ) async {
+    String stationId,
+    Map<String, dynamic> updates,
+  ) async {
     try {
       await _db.collection('cng_stations').doc(stationId).update({
         ...updates,
@@ -216,9 +216,11 @@ class FirestoreService {
         .where('city', isEqualTo: city)
         .orderBy('updatedAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-        .map((doc) => Station.fromMap(doc.id, doc.data()))
-        .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => Station.fromMap(doc.id, doc.data()))
+              .toList(),
+        );
   }
 
   /// Get stations by state
@@ -228,9 +230,11 @@ class FirestoreService {
         .where('state', isEqualTo: state)
         .orderBy('updatedAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-        .map((doc) => Station.fromMap(doc.id, doc.data()))
-        .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => Station.fromMap(doc.id, doc.data()))
+              .toList(),
+        );
   }
 
   /// Get stations by provider
@@ -240,9 +244,11 @@ class FirestoreService {
         .where('provider', isEqualTo: provider)
         .orderBy('updatedAt', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-        .map((doc) => Station.fromMap(doc.id, doc.data()))
-        .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => Station.fromMap(doc.id, doc.data()))
+              .toList(),
+        );
   }
 
   /// Search stations by name
@@ -253,9 +259,11 @@ class FirestoreService {
         .startAt([query])
         .endAt(['$query\uf8ff'])
         .snapshots()
-        .map((snapshot) => snapshot.docs
-        .map((doc) => Station.fromMap(doc.id, doc.data()))
-        .toList());
+        .map(
+          (snapshot) => snapshot.docs
+              .map((doc) => Station.fromMap(doc.id, doc.data()))
+              .toList(),
+        );
   }
 
   /// Get statistics
@@ -279,7 +287,7 @@ class FirestoreService {
 
       final totalReports = stations.fold<int>(
         0,
-            (sum, station) => sum + station.reportCount,
+        (sum, station) => sum + station.reportCount,
       );
 
       return {
@@ -292,5 +300,71 @@ class FirestoreService {
     } catch (e) {
       throw Exception('Failed to get statistics: $e');
     }
+  }
+
+  /// Fetch all stations once (for dropdowns/pickers, not real-time)
+  Future<List<Map<String, String>>> fetchAllStationsOnce() async {
+    final snapshot = await _db.collection('cng_stations').orderBy('name').get();
+
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      return {
+        'id': doc.id,
+        'name': (data['name'] ?? '') as String,
+        'city': (data['city'] ?? '') as String,
+      };
+    }).toList();
+  }
+
+  /// Submit a verification request for owner/worker role
+  Future<void> submitVerificationRequest({
+    required String userId,
+    required String fullName,
+    required String stationId,
+    required String stationName,
+    required String contact,
+    required String role, // 'owner' or 'worker'
+  }) async {
+    try {
+      await _db.collection('verification_requests').add({
+        'userId': userId,
+        'fullName': fullName,
+        'stationId': stationId,
+        'stationName': stationName,
+        'contact': contact,
+        'role': role,
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to submit verification request: $e');
+    }
+  }
+
+  /// Check if current user already has a pending/approved/rejected verification request
+  Future<Map<String, dynamic>?> checkExistingVerificationRequest() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+
+    final snapshot = await _db
+        .collection('verification_requests')
+        .where('userId', isEqualTo: user.uid)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isEmpty) return null;
+
+    final doc = snapshot.docs.first;
+    return {'id': doc.id, ...doc.data()};
+  }
+
+  /// Fetch current user profile from Firestore
+  Future<Map<String, dynamic>?> fetchCurrentUserProfile() async {
+    final user = _auth.currentUser;
+    if (user == null) return null;
+
+    final doc = await _db.collection('users').doc(user.uid).get();
+    if (!doc.exists || doc.data() == null) return null;
+    return {'uid': user.uid, ...doc.data()!};
   }
 }

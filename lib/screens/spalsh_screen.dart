@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:quickcng/models/enums.dart';
+import 'package:quickcng/providers/auth_provider.dart';
+import 'package:quickcng/providers/user_provider.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen>
+class _SplashScreenState extends ConsumerState<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _logoScaleAnimation;
@@ -24,7 +28,9 @@ class _SplashScreenState extends State<SplashScreen>
     super.initState();
 
     _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1800));
+      vsync: this,
+      duration: const Duration(milliseconds: 2000),
+    );
 
     _logoScaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(
@@ -39,12 +45,13 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    _titleSlideAnimation = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.3, 0.7, curve: Curves.easeOutCubic),
-      ),
-    );
+    _titleSlideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.3, 0.7, curve: Curves.easeOutCubic),
+          ),
+        );
     _titleFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
@@ -52,12 +59,13 @@ class _SplashScreenState extends State<SplashScreen>
       ),
     );
 
-    _subtitleSlideAnimation = Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.5, 0.9, curve: Curves.easeOutCubic),
-      ),
-    );
+    _subtitleSlideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _controller,
+            curve: const Interval(0.5, 0.9, curve: Curves.easeOutCubic),
+          ),
+        );
     _subtitleFadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
@@ -73,7 +81,7 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _controller.forward();
-    _navigateToHome();
+    _navigateAfterSplash();
   }
 
   @override
@@ -82,12 +90,42 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
-  Future<void> _navigateToHome() async {
-    // Wait for animations to finish
-    await Future.delayed(const Duration(milliseconds: 2800));
+  Future<void> _navigateAfterSplash() async {
+    // Always show splash for full 3 seconds regardless of auth state
+    await Future.delayed(const Duration(milliseconds: 3000));
 
-    if (mounted) {
+    if (!mounted) return;
+
+    // Check auth state AFTER the delay
+    final authState = ref.read(authStateProvider);
+    final user = authState.value;
+
+    if (user == null) {
       context.go('/auth');
+      return;
+    }
+
+    // Logged in → check profile for role-based routing
+    final profileState = ref.read(userProfileProvider);
+    final profile = profileState.value;
+
+    if (profile == null) {
+      context.go('/setup');
+      return;
+    }
+
+    switch (profile.role) {
+      case UserRole.admin:
+        context.go('/admin');
+        break;
+      case UserRole.owner:
+        context.go('/dashboard');
+        break;
+      case UserRole.worker:
+      case UserRole.user:
+      case UserRole.guest:
+        context.go('/home');
+        break;
     }
   }
 
@@ -177,7 +215,9 @@ class _SplashScreenState extends State<SplashScreen>
                   opacity: _subtitleFadeAnimation,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 8),
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withAlpha(30),
                       borderRadius: BorderRadius.circular(20),
@@ -204,8 +244,9 @@ class _SplashScreenState extends State<SplashScreen>
                       height: 40,
                       width: 40,
                       child: CircularProgressIndicator(
-                        valueColor:
-                            const AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                          Colors.white,
+                        ),
                         strokeWidth: 3,
                         backgroundColor: Colors.white.withAlpha(50),
                       ),

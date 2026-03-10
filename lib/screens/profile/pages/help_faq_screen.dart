@@ -43,27 +43,6 @@ class _HelpFaqScreenState extends State<HelpFaqScreen> {
       backgroundColor: const Color(0xFFF5F7FA),
       body: CustomScrollView(
         slivers: [
-          // Add this SliverToBoxAdapter right below your SliverAppBar
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: 'Search FAQs...',
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                onChanged: (value) {
-                  // Implement filtering logic on your _faqs list here
-                },
-              ),
-            ),
-          ),
           SliverAppBar(
             expandedHeight: 200,
             pinned: true,

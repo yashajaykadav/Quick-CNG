@@ -19,7 +19,7 @@ class ProfileContent extends ConsumerWidget {
       slivers: [
         // ✅ FIXED: Increased expandedHeight
         SliverAppBar(
-          expandedHeight: 300, // Increased from 280
+          expandedHeight: 250, // Increased from 280
           pinned: true,
           backgroundColor: Colors.green[700],
           flexibleSpace: FlexibleSpaceBar(

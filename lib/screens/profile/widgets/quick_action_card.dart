@@ -1,4 +1,5 @@
-import 'package:flutter/Material.dart';
+import 'package:flutter/material.dart';
+
 // Quick Action Card
 class QuickActionCard extends StatelessWidget {
   final IconData icon;
@@ -6,7 +7,8 @@ class QuickActionCard extends StatelessWidget {
   final Color color;
   final VoidCallback onTap;
 
-  const QuickActionCard({super.key,
+  const QuickActionCard({
+    super.key,
     required this.icon,
     required this.label,
     required this.color,
@@ -43,10 +45,7 @@ class QuickActionCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
             ),
           ],
         ),
