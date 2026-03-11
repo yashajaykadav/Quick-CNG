@@ -39,12 +39,9 @@ class _StationListViewState extends ConsumerState<StationListView> {
 
     // Load more when user scrolls near the bottom edge
     if (currentScroll >= maxScroll - 200) {
-      final currentLimit = ref.read(stationFetchLimitProvider);
-      
-      // Only request more if we actually reached the current fetch limit.
-      // E.g., if we requested 20 but only got 10 back from DB, we shouldn't bump it.
-      if (widget.stations.length >= currentLimit) {
-        ref.read(stationFetchLimitProvider.notifier).state = currentLimit + 20;
+      final hasMore = ref.read(hasMoreStationsProvider);
+      if (hasMore) {
+        ref.read(stationListProvider.notifier).loadMore();
       }
     }
   }
@@ -72,8 +69,10 @@ class _StationListViewState extends ConsumerState<StationListView> {
       itemBuilder: (context, index) {
         if (index == widget.stations.length) {
           // Bottom loading indicator logic
-          final currentLimit = ref.watch(stationFetchLimitProvider);
-          if (widget.stations.length >= currentLimit) {
+          final hasMore = ref.watch(hasMoreStationsProvider);
+          final isLoading = ref.watch(stationListProvider).isLoading;
+          
+          if (hasMore || isLoading) {
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 24),
               child: Center(

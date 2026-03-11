@@ -14,27 +14,45 @@ class ReportSubmitButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool active = !isSubmitting && !isDisabled;
+
     return SizedBox(
       width: double.infinity,
-      height: 60,
-      child: ElevatedButton(
-        onPressed: (isSubmitting || isDisabled) ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.green[700],
-          disabledBackgroundColor: Colors.grey[300],
+      height: 56, // Sleeker height
+      child: FilledButton(
+        onPressed: active ? onPressed : null,
+        style: FilledButton.styleFrom(
+          backgroundColor: const Color(0xFF1FAF5A), // Premium green
+          disabledBackgroundColor: Colors.grey.shade200,
+          disabledForegroundColor: Colors.grey.shade500,
+          elevation: active ? 2 : 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
         child: isSubmitting
-            ? const CircularProgressIndicator(color: Colors.white)
-            : const Text(
-                'Submit Report',
-                style: TextStyle(
+            ? const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
                   color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  strokeWidth: 2.5, // Thinner, cleaner spinner
                 ),
+              )
+            : const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.send_rounded, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Submit Report',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600, // Semi-bold is cleaner
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
               ),
       ),
     );

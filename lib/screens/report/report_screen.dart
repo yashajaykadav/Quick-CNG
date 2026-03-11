@@ -48,10 +48,11 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
         return;
       }
 
-      final isStaff = userProfile.isStationStaff;
+      final isStaffForThisStation = userProfile.isAdmin || 
+          (userProfile.isStationStaff && userProfile.stationId == widget.station.id);
 
       // Check 30-minute cooldown
-      if (!isStaff) {
+      if (!isStaffForThisStation) {
         final recentReports = ref.read(stationReportsProvider(widget.station.id)).value ?? [];
         final thirtyMinsAgo = DateTime.now().subtract(const Duration(minutes: 30));
         
@@ -67,7 +68,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       }
 
       // Distance check for non-staff users
-      if (!isStaff) {
+      if (!isStaffForThisStation) {
         final position = await _determinePosition();
         final distance = Geolocator.distanceBetween(
           position.latitude,
@@ -93,13 +94,13 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       }
 
       // Submit report to Firestore
-      await _saveReport(userProfile);
+      await _saveReport(userProfile, isStaffForThisStation);
       final stationService = StationService();
       await stationService.updateStationStatus(widget.station.id);
 
       if (mounted) {
         _showSnackBar(
-          isStaff ? 'Official Status Updated' : 'Report Submitted',
+          isStaffForThisStation ? 'Official Status Updated' : 'Report Submitted',
           isSuccess: true,
         );
         Navigator.pop(context);
@@ -115,7 +116,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     }
   }
 
-  Future<void> _saveReport(AppUser user) async {
+  Future<void> _saveReport(AppUser user, bool isStaffForThisStation) async {
     final firestore = FirebaseFirestore.instance;
     final batch = firestore.batch();
 
@@ -132,7 +133,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
       'createdAt': FieldValue.serverTimestamp(),
       'userId': user.uid,
       'userName': user.name,
-      'userRole': user.role.name,
+      'userRole': (isStaffForThisStation ? user.role : UserRole.user).name,
     });
 
     // 2. Update station's aggregated data

@@ -24,6 +24,10 @@ class Station {
 
   final int reportCount;
   final List<Report> reports;
+  
+  // Status calculation metadata
+  final double? confidence;
+  final int? freshnessMinutes;
 
   double? distance;
 
@@ -44,6 +48,8 @@ class Station {
     required this.updatedAt,
     this.reportCount = 0,
     this.reports = const [],
+    this.confidence,
+    this.freshnessMinutes,
     this.distance,
   });
 
@@ -101,6 +107,8 @@ class Station {
       updatedAt:
       (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       reportCount: data['reportCount'] ?? 0,
+      confidence: (data['confidence'] as num?)?.toDouble(),
+      freshnessMinutes: data['freshnessMinutes'] as int?,
     );
   }
 
@@ -140,14 +148,13 @@ class Station {
 
   Map<String, dynamic> toMap() {
     return {
-      'stationId': stationId,
       'name': name,
       'address': address,
       'city': city,
       'district': district,
       'state': state,
-      'latitude': latitude,
-      'longitude': longitude,
+      // 'stationId', 'latitude', and 'longitude' are omitted to save storage space
+      // since document ID and 'geo' cover them completely.
 
       /// Recommended for geo queries
       'geo': GeoPoint(latitude, longitude),
@@ -158,6 +165,8 @@ class Station {
       'traffic': traffic.name,
       'updatedAt': FieldValue.serverTimestamp(),
       'reportCount': reportCount,
+      if (confidence != null) 'confidence': confidence,
+      if (freshnessMinutes != null) 'freshnessMinutes': freshnessMinutes,
     };
   }
 
@@ -182,6 +191,8 @@ class Station {
     DateTime? updatedAt,
     int? reportCount,
     List<Report>? reports,
+    double? confidence,
+    int? freshnessMinutes,
     double? distance,
   }) {
     return Station(
@@ -201,6 +212,8 @@ class Station {
       updatedAt: updatedAt ?? this.updatedAt,
       reportCount: reportCount ?? this.reportCount,
       reports: reports ?? this.reports,
+      confidence: confidence ?? this.confidence,
+      freshnessMinutes: freshnessMinutes ?? this.freshnessMinutes,
       distance: distance ?? this.distance,
     );
   }

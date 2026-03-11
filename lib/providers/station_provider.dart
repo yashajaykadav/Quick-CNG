@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:geolocator/geolocator.dart';
@@ -16,53 +17,103 @@ final stationFilterProvider = StateProvider<StationFilter>((ref) {
   return StationFilter.all;
 });
 
-// Add a state to manage how many stations we've lazy-loaded
-final stationFetchLimitProvider = StateProvider<int>((ref) => 20);
+// Add a state to manage if we have more stations to load
+final hasMoreStationsProvider = StateProvider<bool>((ref) => true);
 
-// All stations stream from Firestore (Lazy Loaded)
-final stationsStreamProvider = StreamProvider<List<Station>>((ref) {
-  final fetchLimit = ref.watch(stationFetchLimitProvider);
-  
-  return FirebaseFirestore.instance
-      .collection('cng_stations')
-      .orderBy('updatedAt', descending: true)
-      .limit(fetchLimit)
-      .snapshots()
-      .map((snapshot) => snapshot.docs
-      .map((doc) => Station.fromMap(doc.id, doc.data()))
-      .toList());
+class StationListNotifier extends AsyncNotifier<List<Station>> {
+  DocumentSnapshot? _lastVisible;
+  bool _hasMore = true;
+
+  @override
+  Future<List<Station>> build() async {
+    return _fetchStations(limit: 20);
+  }
+
+  Future<List<Station>> _fetchStations({required int limit}) async {
+    var query = FirebaseFirestore.instance
+        .collection('cng_stations')
+        .orderBy('updatedAt', descending: true)
+        .limit(limit);
+
+    if (_lastVisible != null) {
+      query = query.startAfterDocument(_lastVisible!);
+    }
+
+    final snapshot = await query.get();
+
+    if (snapshot.docs.isNotEmpty) {
+      _lastVisible = snapshot.docs.last;
+    }
+
+    if (snapshot.docs.length < limit) {
+      _hasMore = false;
+    }
+    
+    // Update the provider state asynchronously so the UI can know if it can load more
+    ref.read(hasMoreStationsProvider.notifier).state = _hasMore;
+
+    return snapshot.docs
+        .map((doc) => Station.fromMap(doc.id, doc.data()))
+        .toList();
+  }
+
+  Future<void> loadMore() async {
+    if (!_hasMore || state.isLoading) return;
+
+    final currentList = state.value ?? [];
+
+    try {
+      final newStations = await _fetchStations(limit: 20);
+      state = AsyncValue.data([...currentList, ...newStations]);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+}
+
+final stationListProvider =
+    AsyncNotifierProvider<StationListNotifier, List<Station>>(() {
+  return StationListNotifier();
 });
 
+// Helper for compute to calculate distances off the main thread
+List<Station> _calculateDistances(Map<String, dynamic> params) {
+  final stations = params['stations'] as List<Station>;
+  final latitude = params['latitude'] as double;
+  final longitude = params['longitude'] as double;
+
+  return stations.map((station) {
+    final distance = Geolocator.distanceBetween(
+      latitude,
+      longitude,
+      station.latitude,
+      station.longitude,
+    ) / 1000; // Convert to km
+
+    return station.copyWith(distance: distance);
+  }).toList();
+}
+
 // Stations with distance calculated
-final stationsWithDistanceProvider = Provider<AsyncValue<List<Station>>>((ref) {
-  final stationsAsync = ref.watch(stationsStreamProvider);
+final stationsWithDistanceProvider = FutureProvider<List<Station>>((ref) async {
+  final stationsAsync = ref.watch(stationListProvider);
   final locationAsync = ref.watch(userLocationProvider);
 
-  return stationsAsync.when(
-    data: (stations) {
-      return locationAsync.when(
-        data: (position) {
-          // Calculate distance for each station
-          final stationsWithDistance = stations.map((station) {
-            final distance = Geolocator.distanceBetween(
-              position.latitude,
-              position.longitude,
-              station.latitude,  // Fixed: was station.lat
-              station.longitude, // Fixed: was station.lng
-            ) / 1000; // Convert to km
+  if (stationsAsync.value == null || locationAsync.value == null) {
+    // If we're loading or have no data yet, returning what we have via AsyncValue handling
+    if (stationsAsync.value != null) return stationsAsync.value!;
+    return [];
+  }
 
-            return station.copyWith(distance: distance);
-          }).toList();
+  final stations = stationsAsync.value!;
+  final position = locationAsync.value!;
 
-          return AsyncValue.data(stationsWithDistance);
-        },
-        loading: () => AsyncValue.data(stations),
-        error: (error, stack) => AsyncValue.data(stations), // Fixed: was (_, _)
-      );
-    },
-    loading: () => const AsyncValue.loading(),
-    error: (error, stack) => AsyncValue.error(error, stack),
-  );
+  // Offload heavy math to a background isolate
+  return await compute(_calculateDistances, {
+    'stations': stations,
+    'latitude': position.latitude,
+    'longitude': position.longitude,
+  });
 });
 
 // Filtered stations based on search and filter
@@ -117,7 +168,7 @@ final filteredStationsProvider = Provider<List<Station>>((ref) {
       return filtered;
     },
     loading: () => [],
-    error: (error, stack) => [], // Fixed: was (_, _)
+    error: (error, stack) => [],
   );
 });
 

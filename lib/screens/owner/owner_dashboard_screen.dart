@@ -7,6 +7,8 @@ import 'package:quickcng/providers/station_provider.dart';
 import 'package:quickcng/screens/owner/widgets/station_header_card.dart';
 import 'package:quickcng/screens/owner/widgets/workers_list_section.dart';
 
+// ... existing imports
+
 class OwnerDashboardScreen extends ConsumerWidget {
   const OwnerDashboardScreen({super.key});
 
@@ -18,6 +20,16 @@ class OwnerDashboardScreen extends ConsumerWidget {
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (err, stack) => Scaffold(
+        appBar: AppBar(
+          // Added back button for error state
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.go('/home'),
+          ),
+          title: const Text('Station Management'),
+          backgroundColor: Colors.green[700],
+          foregroundColor: Colors.white,
+        ),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -48,6 +60,11 @@ class OwnerDashboardScreen extends ConsumerWidget {
         return Scaffold(
           backgroundColor: const Color(0xFFF8F9FA),
           appBar: AppBar(
+            // --- Added Back Button ---
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+            ),
             title: const Text('Station Management'),
             backgroundColor: Colors.green[700],
             foregroundColor: Colors.white,
@@ -65,16 +82,12 @@ class OwnerDashboardScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Station Header
                     StationHeaderCard(
                       name: station.name,
                       status: station.status,
                       traffic: station.traffic,
                     ),
-
                     const SizedBox(height: 24),
-
-                    // Update Status Button
                     SizedBox(
                       width: double.infinity,
                       height: 54,
@@ -95,12 +108,8 @@ class OwnerDashboardScreen extends ConsumerWidget {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 32),
-
-                    // Station Workers Management
                     WorkersListSection(stationId: stationId),
-
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -114,6 +123,16 @@ class OwnerDashboardScreen extends ConsumerWidget {
 
   Widget _buildAccessDenied(BuildContext context, String message) {
     return Scaffold(
+      // Added AppBar to Access Denied so user isn't "trapped"
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/home'),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: Colors.black,
+      ),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),

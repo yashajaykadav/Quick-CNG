@@ -272,26 +272,29 @@ class FirestoreService {
   /// Get statistics
   Future<Map<String, dynamic>> getStatistics() async {
     try {
-      final stationsSnapshot = await _db.collection('cng_stations').get();
-      final stations = stationsSnapshot.docs
-          .map((doc) => Station.fromMap(doc.id, doc.data()))
-          .toList();
+      final totalQuery = await _db.collection('cng_stations').count().get();
+      final totalStations = totalQuery.count ?? 0;
 
-      final totalStations = stations.length;
-      final availableStations = stations
-          .where((s) => s.status == StationStatus.available)
-          .length;
-      final unavailableStations = stations
-          .where((s) => s.status == StationStatus.unavailable)
-          .length;
-      final closedStations = stations
-          .where((s) => s.status == StationStatus.closed)
-          .length;
+      final availableQuery = await _db.collection('cng_stations')
+          .where('status', isEqualTo: StationStatus.available.name)
+          .count()
+          .get();
+      final availableStations = availableQuery.count ?? 0;
 
-      final totalReports = stations.fold<int>(
-        0,
-        (sums, station) => sums + station.reportCount,
-      );
+      final unavailableQuery = await _db.collection('cng_stations')
+          .where('status', isEqualTo: StationStatus.unavailable.name)
+          .count()
+          .get();
+      final unavailableStations = unavailableQuery.count ?? 0;
+
+      final closedQuery = await _db.collection('cng_stations')
+          .where('status', isEqualTo: StationStatus.closed.name)
+          .count()
+          .get();
+      final closedStations = closedQuery.count ?? 0;
+
+      final reportsAggregate = await _db.collection('cng_stations').aggregate(sum('reportCount')).get();
+      final totalReports = reportsAggregate.getSum('reportCount')?.toInt() ?? 0;
 
       return {
         'totalStations': totalStations,

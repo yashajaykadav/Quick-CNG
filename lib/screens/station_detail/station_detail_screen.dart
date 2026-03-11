@@ -22,7 +22,7 @@ class StationDetailScreen extends ConsumerWidget {
     final reportsAsync = ref.watch(stationReportsProvider(stationId));
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F7), // Light grey background
+      backgroundColor: const Color(0xFFF2F4F7),
       body: stationAsync.when(
         loading: () => const Center(child: LoadingWidget()),
         error: (err, _) => Center(child: ErrorStateWidget(error: err.toString())),
@@ -57,22 +57,14 @@ class StationDetailScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      // 1. Header (Name, Status, Distance)
                       HeaderCard(station: station),
                       const SizedBox(height: 16),
-
-                      // 2. Wait Time / Traffic
                       VisualWaitMeter(traffic: station.traffic),
                       const SizedBox(height: 16),
-
-                      // 3. Location & Directions
                       AddressSection(station: station),
                       const SizedBox(height: 24),
-
-                      // 4. Community Reports
                       const ReportsHeader(),
                       const SizedBox(height: 8),
-
                       reportsAsync.maybeWhen(
                         data: (reports) => ReportsList(reports: reports),
                         orElse: () => const Center(
@@ -82,9 +74,7 @@ class StationDetailScreen extends ConsumerWidget {
                           ),
                         ),
                       ),
-
-                      // Bottom padding for FAB
-                      const SizedBox(height: 100),
+                      // Bottom padding removed since the button is now a fixed footer
                     ],
                   ),
                 ),
@@ -94,42 +84,66 @@ class StationDetailScreen extends ConsumerWidget {
         },
       ),
 
-      // FAB for Reporting
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: stationAsync.maybeWhen(
+      // Fixed Professional Bottom Bar instead of FAB
+      bottomNavigationBar: stationAsync.maybeWhen(
         data: (station) {
-          if (station == null) return null;
+          if (station == null) return const SizedBox.shrink();
 
-          return SizedBox(
-            width: MediaQuery.of(context).size.width * 0.9,
-            child: FloatingActionButton.extended(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ReportScreen(station: station),
-                  ),
-                );
-              },
-              backgroundColor: const Color(0xFFE07B00), // Orange for action
-              elevation: 4,
-              icon: const Icon(
-                Icons.edit_note_rounded,
-                size: 26,
-                color: Colors.white,
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(
+                top: BorderSide(color: Colors.grey.shade200),
               ),
-              label: const Text(
-                "Submit Update",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, -4),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              child: SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: FilledButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ReportScreen(station: station),
+                      ),
+                    );
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFFE07B00), // Action orange
+                    elevation: 0, // Removes click animation shadows
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  icon: const Icon(
+                    Icons.edit_note_rounded,
+                    size: 22,
+                    color: Colors.white,
+                  ),
+                  label: const Text(
+                    "Submit Update",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.3,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ),
           );
         },
-        orElse: () => null,
+        orElse: () => const SizedBox.shrink(),
       ),
     );
   }
