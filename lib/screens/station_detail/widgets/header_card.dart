@@ -82,7 +82,7 @@ class HeaderCard extends StatelessWidget {
                   child: Column(
                     children: [
                       Text(
-                        '${station.distance!.toStringAsFixed(1)}',
+                        station.distance!.toStringAsFixed(1),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,

@@ -271,7 +271,7 @@ class _DistanceBadge extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            '${distance.toStringAsFixed(1)}',
+            distance.toStringAsFixed(1),
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w800,

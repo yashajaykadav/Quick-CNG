@@ -22,9 +22,10 @@ class _HomeLoadingStateState extends State<HomeLoadingState>
       vsync: this,
       duration: const Duration(milliseconds: 1100),
     )..repeat(reverse: true);
-    _animation = Tween<double>(begin: 0.4, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _animation = Tween<double>(
+      begin: 0.4,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -38,13 +39,11 @@ class _HomeLoadingStateState extends State<HomeLoadingState>
     return ListView.separated(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       itemCount: 4,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (_, __) => AnimatedBuilder(
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
+      itemBuilder: (_, _) => AnimatedBuilder(
         animation: _animation,
-        builder: (_, __) => Opacity(
-          opacity: _animation.value,
-          child: _SkeletonCard(),
-        ),
+        builder: (_, _) =>
+            Opacity(opacity: _animation.value, child: _SkeletonCard()),
       ),
     );
   }
@@ -138,11 +137,7 @@ class HomeErrorState extends StatelessWidget {
   final String error;
   final VoidCallback? onRetry;
 
-  const HomeErrorState({
-    super.key,
-    required this.error,
-    this.onRetry,
-  });
+  const HomeErrorState({super.key, required this.error, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -158,8 +153,11 @@ class HomeErrorState extends StatelessWidget {
                 color: Colors.red.withAlpha(18),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.wifi_off_rounded,
-                  size: 52, color: Colors.red),
+              child: const Icon(
+                Icons.wifi_off_rounded,
+                size: 52,
+                color: Colors.red,
+              ),
             ),
             const SizedBox(height: 20),
             const Text(
@@ -213,11 +211,7 @@ class HomeEmptyState extends StatelessWidget {
   final String? searchQuery;
   final VoidCallback? onClearSearch;
 
-  const HomeEmptyState({
-    super.key,
-    this.searchQuery,
-    this.onClearSearch,
-  });
+  const HomeEmptyState({super.key, this.searchQuery, this.onClearSearch});
 
   @override
   Widget build(BuildContext context) {
@@ -258,8 +252,7 @@ class HomeEmptyState extends StatelessWidget {
                   ? 'We couldn\'t find "${searchQuery!}". Try a different station name or city.'
                   : 'Try increasing the search distance using the filter above.',
               textAlign: TextAlign.center,
-              style:
-                  const TextStyle(fontSize: 14, color: Color(0xFF888888)),
+              style: const TextStyle(fontSize: 14, color: Color(0xFF888888)),
             ),
             if (hasSearch && onClearSearch != null) ...[
               const SizedBox(height: 28),
@@ -274,7 +267,10 @@ class HomeEmptyState extends StatelessWidget {
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFF1FAF5A),
-                    side: const BorderSide(color: Color(0xFF1FAF5A), width: 1.5),
+                    side: const BorderSide(
+                      color: Color(0xFF1FAF5A),
+                      width: 1.5,
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
