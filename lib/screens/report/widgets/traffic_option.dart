@@ -24,7 +24,7 @@ class TrafficOption extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? color.withAlpha(250) : Colors.white,
+          color: isSelected ? color.withAlpha(20) : Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
             color: isSelected ? color : Colors.grey.shade300,

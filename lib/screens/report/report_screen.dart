@@ -6,7 +6,9 @@ import 'package:quickcng/models/enums.dart';
 import 'package:quickcng/models/station.dart';
 import 'package:quickcng/providers/user_provider.dart';
 import 'package:quickcng/providers/report_provider.dart';
-import 'package:quickcng/screens/report/widgets/traffic_option.dart';
+import 'package:quickcng/screens/report/widgets/availability_button.dart';
+import 'package:quickcng/screens/report/widgets/report_submit_button.dart';
+import 'package:quickcng/screens/report/widgets/traffic_selector.dart';
 
 import '../../models/user.dart';
 import '../../services/station_service.dart';
@@ -29,7 +31,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   bool isSubmitting = false;
 
   Future<void> _submitReport() async {
-    if (selectedTraffic == null) {
+    if (isAvailable && selectedTraffic == null) {
       _showSnackBar('Please select queue status');
       return;
     }
@@ -125,7 +127,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
         .doc();
 
     batch.set(reportRef, {
-      'traffic': selectedTraffic!.name,
+      'traffic': (selectedTraffic ?? TrafficLevel.normal).name,
       'isAvailable': isAvailable,
       'createdAt': FieldValue.serverTimestamp(),
       'userId': user.uid,
@@ -139,7 +141,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
         .doc(widget.station.id);
 
     batch.update(stationRef, {
-      'traffic': selectedTraffic!.name,
+      'traffic': (selectedTraffic ?? TrafficLevel.normal).name,
       'status': isAvailable ? StationStatus.available.name : StationStatus.unavailable.name,
       'updatedAt': FieldValue.serverTimestamp(),
       'reportCount': FieldValue.increment(1),
@@ -171,36 +173,8 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
-              'Select Current Queue Status',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 25),
 
-            // Traffic options
-            TrafficOption(
-              label: 'Low Traffic (0-10 min)',
-              color: Colors.green,
-              icon: Icons.sentiment_satisfied,
-              isSelected: selectedTraffic == TrafficLevel.low,
-              onTap: () => setState(() => selectedTraffic = TrafficLevel.low),
-            ),
-            TrafficOption(
-              label: 'Normal Traffic (10-20 min)',
-              color: Colors.orange,
-              icon: Icons.sentiment_neutral,
-              isSelected: selectedTraffic == TrafficLevel.normal,
-              onTap: () => setState(() => selectedTraffic = TrafficLevel.normal),
-            ),
-            TrafficOption(
-              label: 'High Traffic (20+ min)',
-              color: Colors.red,
-              icon: Icons.sentiment_dissatisfied,
-              isSelected: selectedTraffic == TrafficLevel.high,
-              onTap: () => setState(() => selectedTraffic = TrafficLevel.high),
-            ),
-
-            const SizedBox(height: 30),
+            const SizedBox(height: 15),
 
             // CNG Availability
             const Text(
@@ -212,7 +186,7 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
             Row(
               children: [
                 Expanded(
-                  child: _AvailabilityButton(
+                  child: AvailabilityButton(
                     label: 'Available',
                     icon: Icons.check_circle,
                     color: Colors.green,
@@ -222,45 +196,38 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _AvailabilityButton(
+                  child: AvailabilityButton(
                     label: 'Not Available',
                     icon: Icons.cancel,
                     color: Colors.red,
                     isSelected: !isAvailable,
-                    onTap: () => setState(() => isAvailable = false),
+                    onTap: () {
+                       setState(() {
+                         isAvailable = false;
+                         selectedTraffic = null;
+                       });
+                    },
                   ),
                 ),
               ],
             ),
 
+            if (isAvailable) ...[
+              const SizedBox(height: 30),
+              // Traffic Selector
+              TrafficSelector(
+                selectedTraffic: selectedTraffic,
+                onTrafficSelected: (traffic) => setState(() => selectedTraffic = traffic),
+              ),
+            ],
+
             const SizedBox(height: 40),
 
             // Submit button
-            SizedBox(
-              width: double.infinity,
-              height: 60,
-              child: ElevatedButton(
-                onPressed: (isSubmitting || selectedTraffic == null)
-                    ? null
-                    : _submitReport,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green[700],
-                  disabledBackgroundColor: Colors.grey[300],
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                ),
-                child: isSubmitting
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text(
-                  'Submit Report',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
+            ReportSubmitButton(
+              isSubmitting: isSubmitting,
+              isDisabled: isAvailable && selectedTraffic == null,
+              onPressed: _submitReport,
             ),
           ],
         ),
@@ -282,13 +249,13 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
   }
 
   Future<bool> _showConfirmDialog() async {
+    final queueText = isAvailable ? 'Queue: ${selectedTraffic?.displayName}\n' : '';
     return await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Confirm Report'),
         content: Text(
-          'Queue: ${selectedTraffic?.displayName}\n'
-              'Availability: ${isAvailable ? "Available" : "Not Available"}',
+          'Availability: ${isAvailable ? "Available" : "Not Available"}\n$queueText',
         ),
         actions: [
           TextButton(
@@ -352,57 +319,5 @@ class _ReportScreenState extends ConsumerState<ReportScreen> {
     timeLimit: Duration(seconds: 10),
   ),
 );
-  }
-}
-
-// Availability Button Widget
-class _AvailabilityButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _AvailabilityButton({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 20),
-        decoration: BoxDecoration(
-          color: isSelected ? color : Colors.grey.shade200,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isSelected ? color : Colors.grey.shade300,
-            width: 2,
-          ),
-        ),
-        child: Column(
-          children: [
-            Icon(
-              icon,
-              size: 30,
-              color: isSelected ? Colors.white : color,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isSelected ? Colors.white : color,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 }
