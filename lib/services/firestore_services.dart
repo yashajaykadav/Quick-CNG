@@ -9,6 +9,9 @@ class FirestoreService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
+  FirebaseFirestore get db => _db;
+  FirebaseAuth get auth => _auth;
+
   /// Fetch all stations stream
   Stream<List<Station>> getStations() {
     return _db
@@ -366,5 +369,12 @@ class FirestoreService {
     final doc = await _db.collection('users').doc(user.uid).get();
     if (!doc.exists || doc.data() == null) return null;
     return {'uid': user.uid, ...doc.data()!};
+  }
+  Stream<QuerySnapshot> pendingVerificationRequests() {
+    return _db
+        .collection('verification_requests')
+        .where('status', isEqualTo: 'pending')
+        .orderBy('createdAt', descending: true)
+        .snapshots();
   }
 }

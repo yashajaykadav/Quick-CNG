@@ -11,56 +11,85 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch providers
     final stationsAsync = ref.watch(stationsWithDistanceProvider);
     final filteredStations = ref.watch(filteredStationsProvider);
     final selectedFilter = ref.watch(stationFilterProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: const Color(0xFFF2F4F7),
       body: SafeArea(
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            /// ── HEADER ──
             HomeHeader(
               onSearch: (value) {
                 ref.read(searchQueryProvider.notifier).state = value;
               },
             ),
 
-            // Filter chips
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: StationFilter.values.map((filter) {
-                  final isSelected = selectedFilter == filter;
-
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: ChoiceChip(
-                      label: Text(_getFilterLabel(filter)),
-                      selected: isSelected,
-                      selectedColor: Colors.green.withAlpha(35),
-                      backgroundColor: Colors.white,
-                      labelStyle: TextStyle(
-                        color: isSelected ? Colors.green : Colors.grey[700],
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                      ),
-                      onSelected: (selected) {
-                        if (selected) {
-                          ref.read(stationFilterProvider.notifier).state =
-                              filter;
-                        }
-                      },
+            /// ── FILTER CHIPS (distance radius) ──
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Show stations within:',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF888888),
+                      letterSpacing: 0.3,
                     ),
-                  );
-                }).toList(),
+                  ),
+                  const SizedBox(height: 8),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: StationFilter.values.map((filter) {
+                        final isSelected = selectedFilter == filter;
+                        return Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: _FilterChip(
+                            label: _getFilterLabel(filter),
+                            icon: _getFilterIcon(filter),
+                            isSelected: isSelected,
+                            onTap: () {
+                              ref.read(stationFilterProvider.notifier).state =
+                                  filter;
+                            },
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ],
               ),
             ),
 
-            // Station list
+            /// ── RESULT COUNT ──
+            stationsAsync.whenData((_) {
+              if (filteredStations.isNotEmpty) {
+                return Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Text(
+                    '${filteredStations.length} station${filteredStations.length == 1 ? '' : 's'} found',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF555555),
+                    ),
+                  ),
+                );
+              }
+              return const SizedBox.shrink();
+            }).value ??
+                const SizedBox.shrink(),
+
+            /// ── STATION LIST ──
             Expanded(
               child: stationsAsync.when(
                 loading: () => const HomeLoadingState(),
@@ -85,7 +114,8 @@ class HomeScreen extends ConsumerWidget {
                   return StationListView(
                     stations: filteredStations,
                     onNavigateToDetail: (id) {
-                      context.pushNamed('details', pathParameters: {'id': id});
+                      context.pushNamed('details',
+                          pathParameters: {'id': id});
                     },
                     onNavigateToReport: (station) {
                       context.pushNamed('report', extra: station);
@@ -100,7 +130,6 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  // Helper to get filter display labels
   String _getFilterLabel(StationFilter filter) {
     switch (filter) {
       case StationFilter.all:
@@ -114,5 +143,87 @@ class HomeScreen extends ConsumerWidget {
       case StationFilter.radius10km:
         return '10 km';
     }
+  }
+
+  IconData _getFilterIcon(StationFilter filter) {
+    switch (filter) {
+      case StationFilter.all:
+        return Icons.public;
+      case StationFilter.radius1km:
+        return Icons.near_me;
+      case StationFilter.radius3km:
+        return Icons.near_me;
+      case StationFilter.radius5km:
+        return Icons.near_me;
+      case StationFilter.radius10km:
+        return Icons.near_me;
+    }
+  }
+}
+
+// ── Custom Filter Chip ──
+
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _FilterChip({
+    required this.label,
+    required this.icon,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF1FAF5A) : Colors.white,
+          borderRadius: BorderRadius.circular(25),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF1FAF5A)
+                : const Color(0xFFDDDDDD),
+            width: 1.5,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF1FAF5A).withAlpha(60),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ]
+              : [],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 14,
+              color: isSelected ? Colors.white : const Color(0xFF888888),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight:
+                    isSelected ? FontWeight.w700 : FontWeight.w500,
+                color:
+                    isSelected ? Colors.white : const Color(0xFF555555),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

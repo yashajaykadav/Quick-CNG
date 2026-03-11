@@ -9,153 +9,162 @@ class HeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final statusColor = _getStatusColor(station.status);
+    final statusInfo = _getStatusInfo(station.status);
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 32, 20, 28),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [statusColor, statusColor.withAlpha(200)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(15),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
-
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          /// STATUS + DISTANCE
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [_statusBadge(), _distanceBadge()],
-          ),
-
-          const SizedBox(height: 18),
-
-          /// STATION NAME
-          Text(
-            station.name,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
+          /// STATUS BANNER
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: statusInfo.bg,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Icon(statusInfo.icon, size: 22, color: statusInfo.color),
+                const SizedBox(width: 10),
+                Text(
+                  statusInfo.label,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: statusInfo.color,
+                  ),
+                ),
+              ],
             ),
           ),
 
-          const SizedBox(height: 6),
+          const SizedBox(height: 16),
 
-          /// FULL ADDRESS
-          Text(
-            station.fullAddress,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
-          ),
-
-          const SizedBox(height: 18),
-
-          /// QUICK INFO ROW
+          /// STATION NAME & DISTANCE
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              /// TRAFFIC LEVEL
-              _infoItem(Icons.traffic, station.traffic.name.toUpperCase()),
-
-              const SizedBox(width: 20),
-
-              /// 24 HOURS
-              if (station.is24Hours) _infoItem(Icons.access_time, "24 HOURS"),
-
-              const SizedBox(width: 20),
-
-              /// REPORT COUNT
-              _infoItem(Icons.people, "${station.reportCount} REPORTS"),
+              Expanded(
+                child: Text(
+                  station.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1A1A1A),
+                    height: 1.2,
+                  ),
+                ),
+              ),
+              if (station.distance != null) ...[
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8F8EF),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        '${station.distance!.toStringAsFixed(1)}',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF1FAF5A),
+                        ),
+                      ),
+                      const Text(
+                        'km',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Color(0xFF1FAF5A),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
 
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
+          const Divider(height: 1),
+          const SizedBox(height: 12),
 
-          /// UPDATE INFO
-          if (station.hasOfficialUpdate)
-            const Text(
-              "Official update available",
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+          /// OFFICIAL UPDATE WARNING
+          if (station.hasOfficialUpdate) ...[
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.withAlpha(20),
+                border: Border.all(color: Colors.blue.withAlpha(80)),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.verified_user_rounded, color: Colors.blue, size: 20),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      "Official station update available below",
+                      style: TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-
-          const SizedBox(height: 22),
+            const SizedBox(height: 12),
+          ],
         ],
       ),
     );
   }
 
-  /// STATUS BADGE
-  Widget _statusBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.white.withAlpha(50),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        station.displayStatus.toUpperCase(),
-        style: const TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
-  }
-
-  /// DISTANCE BADGE
-  Widget _distanceBadge() {
-    final distanceText = station.distance != null
-        ? "${station.distance!.toStringAsFixed(1)} KM"
-        : "DISTANCE N/A";
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: Colors.black.withAlpha(50),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(distanceText, style: const TextStyle(color: Colors.white)),
-    );
-  }
-
-  /// INFO ITEM
-  Widget _infoItem(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, color: Colors.white, size: 18),
-        const SizedBox(width: 6),
-        Text(
-          text,
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Color _getStatusColor(StationStatus status) {
+  ({Color color, Color bg, IconData icon, String label}) _getStatusInfo(
+      StationStatus status) {
     switch (status) {
       case StationStatus.available:
-        return const Color(0xFF2E7D32);
+        return (
+          color: const Color(0xFF1FAF5A),
+          bg: const Color(0xFFE8F8EF),
+          icon: Icons.check_circle,
+          label: 'CNG Available',
+        );
       case StationStatus.unavailable:
-        return const Color(0xFFD32F2F);
+        return (
+          color: const Color(0xFFE07B00),
+          bg: const Color(0xFFFFF3E0),
+          icon: Icons.warning_rounded,
+          label: 'Currently Unavailable',
+        );
       case StationStatus.closed:
-        return const Color(0xFF616161);
+        return (
+          color: const Color(0xFFD32F2F),
+          bg: const Color(0xFFFFEBEE),
+          icon: Icons.cancel,
+          label: 'Station Closed',
+        );
     }
   }
 }

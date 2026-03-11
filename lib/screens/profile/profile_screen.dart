@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quickcng/providers/user_provider.dart';
-import 'package:quickcng/screens/error_screen.dart';
+import 'package:quickcng/screens/error/error_screen.dart';
 import 'package:quickcng/screens/profile/widgets/profile_content.dart';
 
 class ProfileScreen extends ConsumerWidget {

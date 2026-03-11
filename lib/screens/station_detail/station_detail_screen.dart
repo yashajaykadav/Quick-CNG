@@ -22,88 +22,109 @@ class StationDetailScreen extends ConsumerWidget {
     final reportsAsync = ref.watch(stationReportsProvider(stationId));
 
     return Scaffold(
-      backgroundColor: Colors.white,
-
-      appBar: AppBar(
-        title: const Text("Station Details"),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.phone),
-            onPressed: () {},
-          ),
-        ],
-      ),
-
+      backgroundColor: const Color(0xFFF2F4F7), // Light grey background
       body: stationAsync.when(
-        loading: () => const LoadingWidget(),
-
-        error: (err, _) =>
-            ErrorStateWidget(error: err.toString()),
-
+        loading: () => const Center(child: LoadingWidget()),
+        error: (err, _) => Center(child: ErrorStateWidget(error: err.toString())),
         data: (station) {
           if (station == null) {
             return const StationNotFoundWidget();
           }
 
-          return SingleChildScrollView(
-            child: Column(
-              children: [
-                HeaderCard(station: station),
-
-                const Divider(height: 1),
-
-                VisualWaitMeter(traffic: station.traffic),
-
-                const SizedBox(height: 12),
-
-                AddressSection(station: station),
-
-                const SizedBox(height: 20),
-
-                const ReportsHeader(),
-
-                reportsAsync.maybeWhen(
-                  data: (reports) =>
-                      ReportsList(reports: reports),
-
-                  orElse: () =>
-                  const CircularProgressIndicator(),
+          return CustomScrollView(
+            slivers: [
+              // Modern App Bar
+              SliverAppBar(
+                expandedHeight: 0,
+                pinned: true,
+                backgroundColor: Colors.white,
+                elevation: 0,
+                iconTheme: const IconThemeData(color: Colors.black87),
+                title: const Text(
+                  "Station Details",
+                  style: TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
+                centerTitle: true,
+              ),
 
-                const SizedBox(height: 120),
-              ],
-            ),
+              // Content body
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // 1. Header (Name, Status, Distance)
+                      HeaderCard(station: station),
+                      const SizedBox(height: 16),
+
+                      // 2. Wait Time / Traffic
+                      VisualWaitMeter(traffic: station.traffic),
+                      const SizedBox(height: 16),
+
+                      // 3. Location & Directions
+                      AddressSection(station: station),
+                      const SizedBox(height: 24),
+
+                      // 4. Community Reports
+                      const ReportsHeader(),
+                      const SizedBox(height: 8),
+
+                      reportsAsync.maybeWhen(
+                        data: (reports) => ReportsList(reports: reports),
+                        orElse: () => const Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(24),
+                            child: CircularProgressIndicator(color: Color(0xFF1FAF5A)),
+                          ),
+                        ),
+                      ),
+
+                      // Bottom padding for FAB
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           );
         },
       ),
 
-      floatingActionButtonLocation:
-      FloatingActionButtonLocation.centerFloat,
-
+      // FAB for Reporting
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: stationAsync.maybeWhen(
         data: (station) {
           if (station == null) return null;
 
-          return FloatingActionButton.extended(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      ReportScreen(station: station),
+          return SizedBox(
+            width: MediaQuery.of(context).size.width * 0.9,
+            child: FloatingActionButton.extended(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ReportScreen(station: station),
+                  ),
+                );
+              },
+              backgroundColor: const Color(0xFFE07B00), // Orange for action
+              elevation: 4,
+              icon: const Icon(
+                Icons.edit_note_rounded,
+                size: 26,
+                color: Colors.white,
+              ),
+              label: const Text(
+                "Submit Update",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-              );
-            },
-            backgroundColor: Colors.green[700],
-            icon: const Icon(
-              Icons.mark_unread_chat_alt_outlined,
-              size: 28,
-            ),
-            label: const Text(
-              "Report",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
               ),
             ),
           );
@@ -112,57 +133,78 @@ class StationDetailScreen extends ConsumerWidget {
       ),
     );
   }
-  }
+}
+
 // Station Not Found Widget
 class StationNotFoundWidget extends StatelessWidget {
   const StationNotFoundWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.local_gas_station_outlined,
-              size: 80,
-              color: Colors.grey[400],
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Station Not Found',
-              style: TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800],
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'This station may have been removed or doesn\'t exist',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () => Navigator.pop(context),
-              icon: const Icon(Icons.arrow_back),
-              label: const Text('Go Back'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 16,
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Station Not Found"),
+        elevation: 0,
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withAlpha(20),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.local_gas_station_outlined,
+                  size: 64,
+                  color: Colors.grey[400],
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 24),
+              const Text(
+                'Station Missing',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF1A1A1A),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'This station may have been removed or the link is invalid.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Color(0xFF888888),
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back_rounded),
+                  label: const Text(
+                    'Go Back',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1FAF5A),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

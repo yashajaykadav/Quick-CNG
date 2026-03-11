@@ -4,8 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:quickcng/models/enums.dart';
 import 'package:quickcng/providers/user_provider.dart';
 import 'package:quickcng/providers/station_provider.dart';
-import 'package:quickcng/screens/owner/widget/station_header_card.dart';
-import 'package:quickcng/screens/owner/widget/workers_list_section.dart';
+import 'package:quickcng/screens/owner/widgets/station_header_card.dart';
+import 'package:quickcng/screens/owner/widgets/workers_list_section.dart';
 
 class OwnerDashboardScreen extends ConsumerWidget {
   const OwnerDashboardScreen({super.key});

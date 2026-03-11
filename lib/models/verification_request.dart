@@ -37,28 +37,15 @@ class VerificationRequest {
     this.documentUrl,
   });
 
-  /// -------------------------
-  /// Computed properties
-  /// -------------------------
-
   bool get isPending => status == VerificationStatus.pending;
-
   bool get isApproved => status == VerificationStatus.approved;
-
   bool get isRejected => status == VerificationStatus.rejected;
-
   bool get isProcessed => isApproved || isRejected;
 
   String get statusDisplay => status.displayName;
-
   String get roleDisplay => role.displayName;
 
-  /// -------------------------
-  /// Firestore factory
-  /// -------------------------
-
-  factory VerificationRequest.fromMap(
-      String id, Map<String, dynamic> data) {
+  factory VerificationRequest.fromMap(String id, Map<String, dynamic> data) {
     return VerificationRequest(
       id: id,
       userId: data['userId'] ?? '',
@@ -67,34 +54,24 @@ class VerificationRequest {
       stationName: data['stationName'] ?? '',
       stationId: data['stationId'],
       contact: data['contact'] ?? '',
-
       role: _parseRole(data['role']),
       status: _parseStatus(data['status']),
-
       createdAt:
-      (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-
+          (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       processedAt:
-      (data['processedAt'] as Timestamp?)?.toDate(),
-
+          (data['processedAt'] as Timestamp?)?.toDate(),
       processedBy: data['processedBy'],
       rejectionReason: data['rejectionReason'],
       documentUrl: data['documentUrl'],
     );
   }
 
-  /// -------------------------
-  /// Enum parsing
-  /// -------------------------
-
   static UserRole _parseRole(dynamic value) {
     if (value == null) return UserRole.guest;
 
     try {
       return UserRole.values.firstWhere(
-            (e) =>
-        e.name.toLowerCase() ==
-            value.toString().toLowerCase(),
+        (e) => e.name.toLowerCase() == value.toString().toLowerCase(),
       );
     } catch (_) {
       return UserRole.guest;
@@ -106,18 +83,12 @@ class VerificationRequest {
 
     try {
       return VerificationStatus.values.firstWhere(
-            (e) =>
-        e.name.toLowerCase() ==
-            value.toString().toLowerCase(),
+        (e) => e.name.toLowerCase() == value.toString().toLowerCase(),
       );
     } catch (_) {
       return VerificationStatus.pending;
     }
   }
-
-  /// -------------------------
-  /// Firestore Map
-  /// -------------------------
 
   Map<String, dynamic> toMap() {
     return {
@@ -129,24 +100,15 @@ class VerificationRequest {
       'contact': contact,
       'role': role.name,
       'status': status.name,
-
-      /// created once
-      'createdAt': FieldValue.serverTimestamp(),
-
-      /// optional
+      'createdAt': Timestamp.fromDate(createdAt),
       'processedAt': processedAt != null
           ? Timestamp.fromDate(processedAt!)
           : null,
-
       'processedBy': processedBy,
       'rejectionReason': rejectionReason,
       'documentUrl': documentUrl,
     };
   }
-
-  /// -------------------------
-  /// CopyWith
-  /// -------------------------
 
   VerificationRequest copyWith({
     String? id,
@@ -182,17 +144,8 @@ class VerificationRequest {
     );
   }
 
-  /// -------------------------
-  /// Debug
-  /// -------------------------
-
   @override
   String toString() {
-    return 'VerificationRequest('
-        'id: $id, '
-        'fullName: $fullName, '
-        'role: ${role.name}, '
-        'status: ${status.name}'
-        ')';
+    return 'VerificationRequest(id: $id, fullName: $fullName, role: ${role.name}, status: ${status.name})';
   }
 }

@@ -1,16 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../models/station.dart';
+import '../../../utils/map_utils.dart'; // We'll use this if available, or fallback
 
 class AddressSection extends StatelessWidget {
   final Station station;
 
   const AddressSection({super.key, required this.station});
 
-  Future<void> _openInMaps() async {
+  Future<void> _openInMaps(BuildContext context) async {
+    // Try MapUtils if available, else fallback
+    try {
+      if (station.latitude != 0.0 && station.longitude != 0.0) {
+        MapUtils.openMap(context, station.latitude, station.longitude);
+        return;
+      }
+    } catch (_) {}
+
+    // Fallback exactly as it was
     final uri = Uri.parse(
       "https://www.google.com/maps/dir/?api=1"
-          "&destination=${station.latitude},${station.longitude}",
+      "&destination=${station.latitude},${station.longitude}",
     );
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -20,99 +30,89 @@ class AddressSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withAlpha(40),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withAlpha(15),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: _openInMaps,
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Row(
-              children: [
-                // Map pin icon in a coloured circle
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withAlpha(50),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.location_on_rounded,
-                    color: Colors.green[700],
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 14),
-
-                // Address text
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        "Station Location",
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        station.address,
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 14,
-                          height: 1.4,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      // "Tap to navigate" hint instead of coordinates
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.directions_rounded,
-                            size: 14,
-                            color: Colors.blue[600],
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            "Tap to open directions",
-                            style: TextStyle(
-                              fontSize: 12.5,
-                              color: Colors.blue[600],
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Chevron arrow
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: Colors.grey[400],
-                  size: 24,
-                ),
-              ],
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          const Text(
+            "Station Location",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1A1A1A),
             ),
           ),
-        ),
+          const SizedBox(height: 16),
+
+          // Address info row
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withAlpha(20),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.location_on_rounded,
+                  color: Colors.blue,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  station.address,
+                  style: const TextStyle(
+                    color: Color(0xFF555555),
+                    fontSize: 15,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // Wide navigate button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => _openInMaps(context),
+              icon: const Icon(Icons.near_me_rounded),
+              label: const Text(
+                'Get Directions',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF1FAF5A), // Green action button
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
