@@ -96,4 +96,4 @@ For questions or suggestions, please reach out to [yashajaykadav](https://github
 
 ---
 
-Made with ❤️ by Yasha Jay Kadav
+Made with ❤️ by Yash Ajay Kadav
