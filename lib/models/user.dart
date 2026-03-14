@@ -12,6 +12,7 @@ class AppUser {
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
+  final String? phone;
   final bool setupComplete;
 
   const AppUser({
@@ -23,6 +24,7 @@ class AppUser {
     this.photoURL,
     this.createdAt,
     this.updatedAt,
+    this.phone,
     this.setupComplete = false,
   });
 
@@ -54,6 +56,7 @@ class AppUser {
       createdAt: (data['createdAt'] as Timestamp?)?.toDate(),
       updatedAt: (data['updatedAt'] as Timestamp?)?.toDate(),
 
+      phone: data['phone'],
       setupComplete: data['setupComplete'] ?? false,
     );
   }
@@ -86,6 +89,7 @@ class AppUser {
       'photoURL': photoURL,
       'role': role.name,
       'stationId': stationId,
+      'phone': phone,
       'setupComplete': setupComplete,
 
       /// createdAt should only be set once
@@ -111,6 +115,7 @@ class AppUser {
     String? photoURL,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? phone,
     bool? setupComplete,
   }) {
     return AppUser(
@@ -122,6 +127,7 @@ class AppUser {
       photoURL: photoURL ?? this.photoURL,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      phone: phone ?? this.phone,
       setupComplete: setupComplete ?? this.setupComplete,
     );
   }
@@ -138,6 +144,7 @@ class AppUser {
         'name: $name, '
         'role: ${role.name}, '
         'stationId: $stationId, '
+        'phone: $phone, '
         'setupComplete: $setupComplete'
         ')';
   }

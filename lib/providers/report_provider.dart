@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:quickcng/models/report.dart';
+import 'package:quickcng/providers/firestore_provider.dart';
 
 // Reports for a specific station
 final stationReportsProvider = StreamProvider.family<List<Report>, String>((ref, stationId) {
@@ -32,4 +33,10 @@ final latestOfficialReportProvider = Provider.family<Report?, String>((ref, stat
 
   if (verifiedReports.isEmpty) return null;
   return verifiedReports.first; // Already sorted by createdAt desc
+});
+
+// Reports submitted by the current user
+final userReportsProvider = StreamProvider<List<Report>>((ref) {
+  final firestore = ref.watch(firestoreServiceProvider);
+  return firestore.getUserReports();
 });

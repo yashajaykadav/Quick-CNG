@@ -42,6 +42,9 @@ class FirestoreService {
     final user = _auth.currentUser;
     if (user == null) throw Exception('User not authenticated');
 
+    final stationDoc = await _db.collection('cng_stations').doc(stationId).get();
+    final stationName = stationDoc.data()?['name'] ?? 'Unknown Station';
+
     final stationRef = _db.collection('cng_stations').doc(stationId);
     final reportRef = stationRef.collection('reports').doc();
 
@@ -54,6 +57,8 @@ class FirestoreService {
         'userId': user.uid,
         'userName': userName ?? user.email ?? 'Anonymous',
         'userRole': (userRole ?? UserRole.user).name,
+        'stationId': stationId,
+        'stationName': stationName,
       });
 
       // 2️⃣ Fetch recent reports
@@ -373,11 +378,77 @@ class FirestoreService {
     if (!doc.exists || doc.data() == null) return null;
     return {'uid': user.uid, ...doc.data()!};
   }
+  /// Update user profile in Firestore
+  Future<void> updateUserProfile(String uid, Map<String, dynamic> updates) async {
+    try {
+      await _db.collection('users').doc(uid).update({
+        ...updates,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to update user profile: $e');
+    }
+  }
+
   Stream<QuerySnapshot> pendingVerificationRequests() {
     return _db
         .collection('verification_requests')
         .where('status', isEqualTo: 'pending')
         .orderBy('createdAt', descending: true)
         .snapshots();
+  }
+
+  /// Get reports submitted by the current user
+  Stream<List<Report>> getUserReports() {
+    final user = _auth.currentUser;
+    if (user == null) return Stream.value([]);
+
+    return _db
+        .collectionGroup('reports')
+        .where('userId', isEqualTo: user.uid)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => Report.fromMap(doc.id, doc.data()))
+            .toList());
+  }
+
+  /// Delete a report and update station status
+  Future<void> deleteReport(Report report) async {
+    if (report.stationId == null) return;
+
+    try {
+      final stationRef = _db.collection('cng_stations').doc(report.stationId);
+      final reportRef = stationRef.collection('reports').doc(report.id);
+
+      // 1️⃣ Delete the report
+      await reportRef.delete();
+
+      // 2️⃣ Fetch remaining recent reports to recalculate status
+      final reportsSnapshot = await stationRef
+          .collection('reports')
+          .orderBy('createdAt', descending: true)
+          .limit(50)
+          .get();
+
+      final reports = reportsSnapshot.docs
+          .map((doc) => Report.fromMap(doc.id, doc.data()))
+          .toList();
+
+      // 3️⃣ Calculate new status
+      final result = ReportEngine.calculateStatus(reports);
+
+      // 4️⃣ Update station
+      await stationRef.update({
+        'traffic': result.traffic.name,
+        'status': result.isAvailable
+            ? StationStatus.available.name
+            : StationStatus.unavailable.name,
+        'reportCount': FieldValue.increment(-1),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      throw Exception('Failed to delete report: $e');
+    }
   }
 }

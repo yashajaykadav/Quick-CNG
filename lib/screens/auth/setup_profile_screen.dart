@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/validators.dart';
 
 class SetupProfileScreen extends ConsumerStatefulWidget {
   const SetupProfileScreen({super.key});
@@ -108,7 +109,7 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen> {
                   labelText: 'Full Name',
                   prefixIcon: Icon(Icons.person_outline),
                 ),
-                validator: (val) => val!.isEmpty ? 'Please enter your name' : null,
+                validator: AppValidators.validateName,
               ),
               const SizedBox(height: 20),
 
@@ -121,11 +122,7 @@ class _SetupProfileScreenState extends ConsumerState<SetupProfileScreen> {
                   hintText: '70XXXXXXXXX',
                 ),
                 keyboardType: TextInputType.phone,
-                validator: (val) {
-                  if (val == null || val.isEmpty) return 'Phone number is required';
-                  if (val.length < 10) return 'Enter a valid phone number';
-                  return null;
-                },
+                validator: AppValidators.validatePhone,
               ),
               const SizedBox(height: 40),
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:quickcng/services/firestore_services.dart';
+import 'package:quickcng/utils/validators.dart';
 
 class VerificationFormScreen extends StatefulWidget {
   const VerificationFormScreen({super.key});
@@ -322,9 +323,7 @@ class _VerificationFormScreenState extends State<VerificationFormScreen>
                             label: 'Full Name',
                             icon: Icons.person_outline,
                           ),
-                          validator: (v) => v == null || v.trim().isEmpty
-                              ? 'Please enter your full name'
-                              : null,
+                          validator: AppValidators.validateName,
                         ),
                       ),
 
@@ -339,15 +338,7 @@ class _VerificationFormScreenState extends State<VerificationFormScreen>
                             label: 'Contact Number',
                             icon: Icons.phone_outlined,
                           ),
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty) {
-                              return 'Please enter your contact number';
-                            }
-                            if (v.trim().length < 10) {
-                              return 'Enter a valid contact number';
-                            }
-                            return null;
-                          },
+                          validator: AppValidators.validatePhone,
                         ),
                       ),
 

@@ -3,6 +3,8 @@ import 'enums.dart';
 
 class Report {
   final String id;
+  final String? stationId;
+  final String? stationName;
   final TrafficLevel traffic;
   final bool isAvailable;
   final DateTime createdAt;
@@ -12,6 +14,8 @@ class Report {
 
   Report({
     required this.id,
+    this.stationId,
+    this.stationName,
     required this.traffic,
     required this.isAvailable,
     required this.createdAt,
@@ -38,6 +42,8 @@ class Report {
 
     return Report(
       id: id,
+      stationId: data['stationId'],
+      stationName: data['stationName'],
       traffic: TrafficLevel.values.firstWhere(
             (e) => e.name == (data['traffic'] ?? ''),
         orElse: () => TrafficLevel.normal,
@@ -60,6 +66,8 @@ class Report {
 
   Map<String, dynamic> toMap() {
     return {
+      if (stationId != null) 'stationId': stationId,
+      if (stationName != null) 'stationName': stationName,
       'traffic': traffic.name,
       'isAvailable': isAvailable,
       'createdAt': FieldValue.serverTimestamp(),
@@ -71,6 +79,8 @@ class Report {
 
   Report copyWith({
     String? id,
+    String? stationId,
+    String? stationName,
     TrafficLevel? traffic,
     bool? isAvailable,
     DateTime? createdAt,
@@ -80,6 +90,8 @@ class Report {
   }) {
     return Report(
       id: id ?? this.id,
+      stationId: stationId ?? this.stationId,
+      stationName: stationName ?? this.stationName,
       traffic: traffic ?? this.traffic,
       isAvailable: isAvailable ?? this.isAvailable,
       createdAt: createdAt ?? this.createdAt,
@@ -93,10 +105,12 @@ class Report {
   String toString() {
     return 'Report('
         'id: $id, '
+        'stationId: $stationId, '
+        'stationName: $stationName, '
         'traffic: ${traffic.name}, '
         'isAvailable: $isAvailable, '
         'userRole: ${userRole.name}, '
         'createdAt: $createdAt'
         ')';
   }
-}
+}

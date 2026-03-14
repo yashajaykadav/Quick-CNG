@@ -20,6 +20,8 @@ import '../screens/auth/setup_profile_screen.dart';
 import '../screens/profile/pages/help_faq_screen.dart';
 import '../screens/profile/pages/send_feedback_screen.dart';
 import '../screens/profile/pages/about_app_screen.dart';
+import '../screens/profile/pages/my_reports_screen.dart';
+import '../screens/profile/pages/edit_profile_screen.dart';
 
 final appRouterProvider = Provider<GoRouter>((ref) {
   final notifier = _GoRouterNotifier(ref);
@@ -73,9 +75,19 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ProfileScreen(),
       ),
       GoRoute(
+        path: '/my-reports',
+        name: 'my-reports',
+        builder: (context, state) => const MyReportsScreen(),
+      ),
+      GoRoute(
         path: '/verification',
         name: 'verification',
         builder: (context, state) => const VerificationFormScreen(),
+      ),
+      GoRoute(
+        path: '/edit-profile',
+        name: 'edit-profile',
+        builder: (context, state) => const EditProfileScreen(),
       ),
       GoRoute(
         path: '/dashboard',

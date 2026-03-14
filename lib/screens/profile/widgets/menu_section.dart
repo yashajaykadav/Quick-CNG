@@ -25,14 +25,14 @@ Widget buildMenuSection(BuildContext context, AppUser? user) {
             icon: Icons.person_outline,
             title: 'Edit Profile',
             subtitle: 'Update your information',
-            onTap: () {},
+            onTap: () => context.pushNamed('edit-profile'),
           ),
           const Divider(height: 1),
           MenuItem(
             icon: Icons.assignment_outlined,
             title: 'My Reports',
             subtitle: 'View your submitted reports',
-            onTap: () {},
+            onTap: () => context.pushNamed('my-reports'),
           ),
           if (user?.role == UserRole.user || user?.role == UserRole.guest) ...[
             const Divider(height: 1),

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:quickcng/providers/station_provider.dart';
 import 'package:quickcng/models/station.dart';
 import 'package:quickcng/models/enums.dart';
 import 'package:quickcng/utils/helpers.dart' as helpers;
 import 'package:quickcng/utils/map_utils.dart';
 
-class StationCard extends StatelessWidget {
+class StationCard extends ConsumerWidget {
   final Station station;
   final VoidCallback onTap;
   final VoidCallback onReport;
@@ -17,9 +19,18 @@ class StationCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final statusInfo = _getStatusInfo(station.status);
-    final trafficInfo = _getTrafficInfo(station.traffic);
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch for live updates for this specific station
+    final stationAsync = ref.watch(stationByIdProvider(station.id));
+    
+    // Use latest data or fallback to the initial station object
+    final latestStation = stationAsync.value ?? station;
+    
+    // Ensure we keep the calculated distance from the original list object
+    final displayStation = latestStation.copyWith(distance: station.distance);
+
+    final statusInfo = _getStatusInfo(displayStation.status);
+    final trafficInfo = _getTrafficInfo(displayStation.traffic);
 
     return Material(
       color: Colors.white,
@@ -47,7 +58,7 @@ class StationCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          station.name,
+                          displayStation.name,
                           style: const TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w800,
@@ -65,7 +76,7 @@ class StationCard extends StatelessWidget {
                             const SizedBox(width: 3),
                             Expanded(
                               child: Text(
-                                '${station.city}, ${station.district}',
+                                '${displayStation.city}, ${displayStation.district}',
                                 style: const TextStyle(
                                   fontSize: 13,
                                   color: Color(0xFF888888),
@@ -81,8 +92,8 @@ class StationCard extends StatelessWidget {
                   ),
 
                   // Distance badge
-                  if (station.distance != null)
-                    _DistanceBadge(distance: station.distance!),
+                  if (displayStation.distance != null)
+                    _DistanceBadge(distance: displayStation.distance!),
                 ],
               ),
 
@@ -93,7 +104,7 @@ class StationCard extends StatelessWidget {
                 children: [
                   _TrafficPill(trafficInfo: trafficInfo),
                   const SizedBox(width: 8),
-                  if (station.is24Hours)
+                  if (displayStation.is24Hours)
                     _InfoPill(
                       icon: Icons.access_time_filled,
                       label: 'Open 24 Hours',
@@ -103,18 +114,18 @@ class StationCard extends StatelessWidget {
               ),
 
               /// ── BADGES ──
-              if (station.hasOfficialUpdate) ...[
+              if (displayStation.hasOfficialUpdate) ...[
                 const SizedBox(height: 10),
                 _UpdateBadge(
                   icon: Icons.verified_user,
                   label: 'Verified staff update',
                   color: Colors.blue,
                 ),
-              ] else if (station.reportCount > 0) ...[
+              ] else if (displayStation.reportCount > 0) ...[
                 const SizedBox(height: 10),
                 _UpdateBadge(
                   icon: Icons.people,
-                  label: '${station.reportCount} community report${station.reportCount > 1 ? 's' : ''}',
+                  label: '${displayStation.reportCount} community report${displayStation.reportCount > 1 ? 's' : ''}',
                   color: Colors.blueGrey,
                 ),
               ],
@@ -130,7 +141,7 @@ class StationCard extends StatelessWidget {
                   Icon(Icons.access_time, size: 13, color: Colors.grey[400]),
                   const SizedBox(width: 4),
                   Text(
-                    helpers.formatTimestamp(station.updatedAt),
+                    helpers.formatTimestamp(displayStation.updatedAt),
                     style: TextStyle(fontSize: 12, color: Colors.grey[400]),
                   ),
                   const Spacer(),
@@ -152,12 +163,12 @@ class StationCard extends StatelessWidget {
                     label: 'Navigate',
                     color: Colors.white,
                     bgColor: const Color(0xFF1FAF5A),
-                    onTap: (station.latitude == 0.0 && station.longitude == 0.0)
+                    onTap: (displayStation.latitude == 0.0 && displayStation.longitude == 0.0)
                         ? null
                         : () => MapUtils.openMap(
                               context,
-                              station.latitude,
-                              station.longitude,
+                              displayStation.latitude,
+                              displayStation.longitude,
                             ),
                   ),
                 ],
