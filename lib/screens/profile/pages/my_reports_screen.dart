@@ -22,7 +22,11 @@ class MyReportsScreen extends ConsumerWidget {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black87, size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Colors.black87,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -91,16 +95,17 @@ class _ReportCard extends ConsumerWidget {
                     const SizedBox(height: 4),
                     Text(
                       formatTimestamp(report.createdAt),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                   ],
                 ),
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 22),
+                icon: const Icon(
+                  Icons.delete_outline,
+                  color: Colors.redAccent,
+                  size: 22,
+                ),
                 onPressed: () => _showDeleteDialog(context, ref),
               ),
             ],
@@ -133,7 +138,9 @@ class _ReportCard extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Report'),
-        content: const Text('Are you sure you want to delete this report? This will affect the station status.'),
+        content: const Text(
+          'Are you sure you want to delete this report? This will affect the station status.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -146,14 +153,16 @@ class _ReportCard extends ConsumerWidget {
                 await ref.read(firestoreServiceProvider).deleteReport(report);
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Report deleted successfully')),
+                    const SnackBar(
+                      content: Text('Report deleted successfully'),
+                    ),
                   );
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Error: $e')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('Error: $e')));
                 }
               }
             },
@@ -183,7 +192,7 @@ class _StatusBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 40),
+        border: Border.all(color: color.withValues(alpha: 40)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -213,7 +222,11 @@ class _EmptyReports extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.assignment_late_outlined, size: 64, color: Colors.grey[400]),
+          Icon(
+            Icons.assignment_late_outlined,
+            size: 64,
+            color: Colors.grey[400],
+          ),
           const SizedBox(height: 16),
           Text(
             'No reports yet',
