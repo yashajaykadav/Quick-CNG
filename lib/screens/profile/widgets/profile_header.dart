@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-
 import '../../../models/enums.dart';
 import '../../../models/user.dart';
 
@@ -11,96 +10,42 @@ class ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    // ✅ AMOLED Gradient: Pure black to deep grey
+    final gradientColors = isDark
+        ? [Colors.black, const Color(0xFF121212)]
+        : [Colors.green[700]!, Colors.green[500]!];
+
+    final textColor = Colors.white;
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.green[700]!, Colors.green[500]!],
+          colors: gradientColors,
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
       ),
       child: SafeArea(
-        bottom: false, // ✅ Important: Don't add bottom safe area
+        bottom: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // ✅ FIXED: Reduced top spacing
               const SizedBox(height: 20),
-
-              // Avatar - Reduced size
-              Stack(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(3),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                    ),
-                    child: CircleAvatar(
-                      radius: 40, // ✅ Reduced from 50
-                      backgroundColor: Colors.white.withValues(alpha: 0.2),
-                      child: ClipOval(
-                        child: user?.photoURL != null && user!.photoURL!.isNotEmpty
-                            ? CachedNetworkImage(
-                                imageUrl: user!.photoURL!,
-                                width: 80,
-                                height: 80,
-                                fit: BoxFit.cover,
-                                placeholder: (context, url) => const Center(
-                                  child: SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  ),
-                                ),
-                                errorWidget: (context, url, error) => Icon(
-                                  _getRoleIcon(user?.role),
-                                  size: 40,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Icon(
-                                _getRoleIcon(user?.role),
-                                size: 40, // ✅ Reduced from 50
-                                color: Colors.white,
-                              ),
-                      ),
-                    ),
-                  ),
-                  if (user?.isVerified ?? false)
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: const BoxDecoration(
-                          color: Colors.blue,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.verified,
-                          color: Colors.white,
-                          size: 16, // ✅ Reduced
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-
-              const SizedBox(height: 12), // ✅ Reduced from 16
+              _buildAvatar(textColor),
+              const SizedBox(height: 12),
 
               // Name
               Text(
                 user?.name ?? 'Guest User',
-                style: const TextStyle(
-                  fontSize: 22, // ✅ Reduced from 24
+                style: TextStyle(
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: textColor,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
@@ -112,50 +57,100 @@ class ProfileHeader extends StatelessWidget {
               Text(
                 user?.email ?? 'Not signed in',
                 style: TextStyle(
-                  fontSize: 13, // ✅ Reduced from 14
-                  color: Colors.white.withValues(alpha: 0.8),
+                  fontSize: 13,
+                  color: textColor.withAlpha(
+                    180,
+                  ), // Slightly more visible than 80
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
 
-              const SizedBox(height: 10), // ✅ Reduced from 12
+              const SizedBox(height: 10),
 
               // Role Badge
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: _getRoleBadgeColor(user?.role),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _getRoleIcon(user?.role),
-                      size: 14,
-                      color: Colors.white,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      user?.role.displayName ?? 'Guest',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              _buildRoleBadge(isDark),
 
-              const SizedBox(height: 16), // ✅ Bottom spacing
+              const SizedBox(height: 16),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildAvatar(Color textColor) {
+    return Stack(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: textColor.withAlpha(50), width: 2),
+          ),
+          child: CircleAvatar(
+            radius: 40,
+            backgroundColor: textColor.withAlpha(30),
+            child: ClipOval(
+              child: user?.photoURL != null && user!.photoURL!.isNotEmpty
+                  ? CachedNetworkImage(
+                      imageUrl: user!.photoURL!,
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) =>
+                          const CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                      errorWidget: (context, url, error) => Icon(
+                        _getRoleIcon(user?.role),
+                        size: 40,
+                        color: textColor,
+                      ),
+                    )
+                  : Icon(_getRoleIcon(user?.role), size: 40, color: textColor),
+            ),
+          ),
+        ),
+        if (user?.isVerified ?? false)
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: const BoxDecoration(
+                color: Colors.blue,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.verified, color: Colors.white, size: 16),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildRoleBadge(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+      decoration: BoxDecoration(
+        color: _getRoleBadgeColor(user?.role, isDark),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(_getRoleIcon(user?.role), size: 14, color: Colors.white),
+          const SizedBox(width: 6),
+          Text(
+            user?.role.displayName ?? 'Guest',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -175,18 +170,18 @@ class ProfileHeader extends StatelessWidget {
     }
   }
 
-  Color _getRoleBadgeColor(UserRole? role) {
+  Color _getRoleBadgeColor(UserRole? role, bool isDark) {
     switch (role) {
       case UserRole.admin:
-        return Colors.red;
+        return isDark ? Colors.red[700]! : Colors.red;
       case UserRole.owner:
-        return Colors.amber[700]!;
+        return isDark ? Colors.amber[800]! : Colors.amber[700]!;
       case UserRole.worker:
-        return Colors.blue;
+        return isDark ? Colors.blue[700]! : Colors.blue;
       case UserRole.user:
-        return Colors.green[800]!;
+        return isDark ? Colors.green[700]! : Colors.green[800]!;
       default:
-        return Colors.grey[600]!;
+        return isDark ? Colors.grey[800]! : Colors.grey[600]!;
     }
   }
 }

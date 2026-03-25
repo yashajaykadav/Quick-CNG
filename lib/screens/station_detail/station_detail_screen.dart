@@ -21,11 +21,16 @@ class StationDetailScreen extends ConsumerWidget {
     final stationAsync = ref.watch(stationByIdProvider(stationId));
     final reportsAsync = ref.watch(stationReportsProvider(stationId));
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF2F4F7),
+      // ✅ Adaptive Background (Pure black for AMOLED)
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: stationAsync.when(
         loading: () => const Center(child: LoadingWidget()),
-        error: (err, _) => Center(child: ErrorStateWidget(error: err.toString())),
+        error: (err, _) =>
+            Center(child: ErrorStateWidget(error: err.toString())),
         data: (station) {
           if (station == null) {
             return const StationNotFoundWidget();
@@ -33,19 +38,16 @@ class StationDetailScreen extends ConsumerWidget {
 
           return CustomScrollView(
             slivers: [
-              // Modern App Bar
+              // ✅ Adaptive SliverAppBar
               SliverAppBar(
                 expandedHeight: 0,
                 pinned: true,
-                backgroundColor: Colors.white,
+                backgroundColor: theme.appBarTheme.backgroundColor,
+                foregroundColor: theme.appBarTheme.foregroundColor,
                 elevation: 0,
-                iconTheme: const IconThemeData(color: Colors.black87),
                 title: const Text(
                   "Station Details",
-                  style: TextStyle(
-                    color: Colors.black87,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 centerTitle: true,
               ),
@@ -53,7 +55,10 @@ class StationDetailScreen extends ConsumerWidget {
               // Content body
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
@@ -65,16 +70,22 @@ class StationDetailScreen extends ConsumerWidget {
                       const SizedBox(height: 24),
                       const ReportsHeader(),
                       const SizedBox(height: 8),
+
+                      // Loading state for reports
                       reportsAsync.maybeWhen(
                         data: (reports) => ReportsList(reports: reports),
-                        orElse: () => const Center(
+                        orElse: () => Center(
                           child: Padding(
-                            padding: EdgeInsets.all(24),
-                            child: CircularProgressIndicator(color: Color(0xFF1FAF5A)),
+                            padding: const EdgeInsets.all(24),
+                            child: CircularProgressIndicator(
+                              color: isDark
+                                  ? Colors.green[400]
+                                  : const Color(0xFF1FAF5A),
+                            ),
                           ),
                         ),
                       ),
-                      // Bottom padding removed since the button is now a fixed footer
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
@@ -84,7 +95,7 @@ class StationDetailScreen extends ConsumerWidget {
         },
       ),
 
-      // Fixed Professional Bottom Bar instead of FAB
+      // ✅ Adaptive Fixed Bottom Bar
       bottomNavigationBar: stationAsync.maybeWhen(
         data: (station) {
           if (station == null) return const SizedBox.shrink();
@@ -92,17 +103,23 @@ class StationDetailScreen extends ConsumerWidget {
           return Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: isDark ? Colors.black : Colors.white,
               border: Border(
-                top: BorderSide(color: Colors.grey.shade200),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 10,
-                  offset: const Offset(0, -4),
+                top: BorderSide(
+                  color: isDark
+                      ? Colors.white.withAlpha(20)
+                      : Colors.grey.shade200,
                 ),
-              ],
+              ),
+              boxShadow: isDark
+                  ? []
+                  : [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(10),
+                        blurRadius: 10,
+                        offset: const Offset(0, -4),
+                      ),
+                    ],
             ),
             child: SafeArea(
               child: SizedBox(
@@ -119,24 +136,14 @@ class StationDetailScreen extends ConsumerWidget {
                   },
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFFE07B00), // Action orange
-                    elevation: 0, // Removes click animation shadows
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  icon: const Icon(
-                    Icons.edit_note_rounded,
-                    size: 22,
-                    color: Colors.white,
-                  ),
+                  icon: const Icon(Icons.edit_note_rounded, size: 22),
                   label: const Text(
                     "Submit Update",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.3,
-                      color: Colors.white,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                 ),
               ),
@@ -149,17 +156,16 @@ class StationDetailScreen extends ConsumerWidget {
   }
 }
 
-// Station Not Found Widget
 class StationNotFoundWidget extends StatelessWidget {
   const StationNotFoundWidget({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Station Not Found"),
-        elevation: 0,
-      ),
+      backgroundColor: theme.scaffoldBackgroundColor,
+      appBar: AppBar(title: const Text("Station Not Found"), elevation: 0),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32.0),
@@ -169,32 +175,28 @@ class StationNotFoundWidget extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: Colors.grey.withAlpha(20),
+                  color: theme.hintColor.withAlpha(20),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.local_gas_station_outlined,
                   size: 64,
-                  color: Colors.grey[400],
+                  color: theme.hintColor,
                 ),
               ),
               const SizedBox(height: 24),
-              const Text(
+              Text(
                 'Station Missing',
-                style: TextStyle(
-                  fontSize: 22,
+                style: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Color(0xFF1A1A1A),
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'This station may have been removed or the link is invalid.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Color(0xFF888888),
-                  height: 1.4,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.hintColor,
                 ),
               ),
               const SizedBox(height: 32),
@@ -203,18 +205,7 @@ class StationNotFoundWidget extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: () => Navigator.pop(context),
                   icon: const Icon(Icons.arrow_back_rounded),
-                  label: const Text(
-                    'Go Back',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1FAF5A),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
+                  label: const Text('Go Back'),
                 ),
               ),
             ],

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-// Menu Card Container
 class MenuCard extends StatelessWidget {
   final List<Widget> children;
 
@@ -8,17 +7,27 @@ class MenuCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        // Pulls from CardThemeData in main.dart
+        color: theme.cardTheme.color,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        // Subtle border for AMOLED definition
+        border: isDark
+            ? Border.all(color: Colors.white.withAlpha(20), width: 1)
+            : Border.all(color: theme.dividerColor.withAlpha(10), width: 1),
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withAlpha(15),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Column(children: children),
     );

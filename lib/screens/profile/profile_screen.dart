@@ -9,16 +9,22 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     final userProfileAsync = ref.watch(userProfileProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      // Background adapts to light/dark theme
+      backgroundColor: isDark ? Colors.black : const Color(0xFFF5F7FA),
       body: userProfileAsync.when(
         data: (user) => ProfileContent(user: user),
-        loading: () => const Center(
-          child: CircularProgressIndicator(color: Colors.green),
+        loading: () => Center(
+          child: CircularProgressIndicator(
+            color: isDark ? Colors.green[300] : Colors.green,
+          ),
         ),
-        error: (err, _) => ErrorScreen(error: err.toString(), path: '/',),
+        error: (err, _) => ErrorScreen(error: err.toString(), path: '/'),
       ),
     );
   }

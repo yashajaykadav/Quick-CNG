@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-// Quick Action Card
 class QuickActionCard extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -17,35 +16,59 @@ class QuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          // ✅ Uses the Card color (0xFF121212) from our Theme configuration
+          color: theme.cardTheme.color,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          // ✅ AMOLED Depth: Use a subtle border instead of shadows
+          border: isDark
+              ? Border.all(color: Colors.white.withAlpha(15), width: 1)
+              : Border.all(color: Colors.black.withAlpha(5), width: 1),
+          boxShadow: isDark
+              ? null // No shadows on pure black backgrounds
+              : [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(15),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                // ✅ Brighter tint for dark mode icons
+                color: isDark ? color.withAlpha(40) : color.withAlpha(25),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: color, size: 24),
+              child: Icon(
+                icon,
+                color: isDark
+                    ? color.withAlpha(220)
+                    : color, // Pop color slightly more in dark mode
+                size: 24,
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
             Text(
               label,
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              style: theme.textTheme.labelMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+                // ✅ Use onSurface to ensure perfect white/black contrast
+                color: theme.colorScheme.onSurface,
+              ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

@@ -15,72 +15,98 @@ class StationHeaderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.green[700]!, Colors.green[500]!],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(16),
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    // ✅ AMOLED Gradient: Pure Black to Deep Grey
+    final gradientColors = isDark
+        ? [Colors.black, const Color(0xFF1A1A1A)]
+        : [Colors.green[700]!, Colors.green[500]!];
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: gradientColors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(
+        borderRadius: BorderRadius.circular(20),
+        // ✅ Subtle border for AMOLED definition
+        border: isDark
+            ? Border.all(color: Colors.white.withAlpha(20), width: 1)
+            : null,
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withAlpha(15),
+                  blurRadius: 15,
+                  offset: const Offset(0, 8),
+                ),
+              ],
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(30),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
                   Icons.local_gas_station,
                   color: Colors.white,
-                  size: 28,
+                  size: 24,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    name,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  name,
+                  style: const TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: 0.5,
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                _StatusChip(
-                  label: status.displayName,
-                  color: _getStatusColor(status),
-                  icon: _getStatusIcon(status),
-                ),
-                const SizedBox(width: 8),
-                _StatusChip(
-                  label: traffic.shortName,
-                  color: traffic.color,
-                  icon: Icons.traffic,
-                ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              _StatusChip(
+                label: status.displayName,
+                color: _getStatusColor(status, isDark),
+                icon: _getStatusIcon(status),
+              ),
+              const SizedBox(width: 10),
+              _StatusChip(
+                label: traffic.shortName,
+                color: traffic.color, // Assumes traffic.color handles itself
+                icon: Icons.traffic,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Color _getStatusColor(StationStatus status) {
+  Color _getStatusColor(StationStatus status, bool isDark) {
     switch (status) {
       case StationStatus.available:
-        return Colors.white;
+        return isDark ? Colors.green[300]! : Colors.white;
       case StationStatus.unavailable:
-        return Colors.red[100]!;
+        return isDark ? Colors.orange[300]! : Colors.orange[100]!;
       case StationStatus.closed:
-        return Colors.grey[300]!;
+        return isDark ? Colors.red[300]! : Colors.red[100]!;
     }
   }
 
@@ -89,9 +115,9 @@ class StationHeaderCard extends StatelessWidget {
       case StationStatus.available:
         return Icons.check_circle;
       case StationStatus.unavailable:
-        return Icons.cancel;
+        return Icons.warning_amber_rounded;
       case StationStatus.closed:
-        return Icons.do_not_disturb;
+        return Icons.cancel_outlined;
     }
   }
 }
@@ -110,22 +136,22 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withAlpha(25),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withAlpha(45)),
+        color: Colors.white.withAlpha(20),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withAlpha(30)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: Colors.white),
-          const SizedBox(width: 6),
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
           Text(
             label,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
               fontSize: 13,
             ),
           ),

@@ -1,14 +1,18 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import 'package:quickcng/services/firestore_services.dart';
+import 'package:quickcng/providers/station_api_provider.dart';
 import 'package:quickcng/utils/validators.dart';
 
-class VerificationFormScreen extends StatefulWidget {
+class VerificationFormScreen extends ConsumerStatefulWidget {
   const VerificationFormScreen({super.key});
 
   @override
-  State<VerificationFormScreen> createState() => _VerificationFormScreenState();
+  ConsumerState<VerificationFormScreen> createState() => _VerificationFormScreenState();
 }
 
 class _Station {
@@ -18,7 +22,7 @@ class _Station {
   _Station({required this.id, required this.name, required this.city});
 }
 
-class _VerificationFormScreenState extends State<VerificationFormScreen>
+class _VerificationFormScreenState extends ConsumerState<VerificationFormScreen>
     with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
@@ -74,16 +78,25 @@ class _VerificationFormScreenState extends State<VerificationFormScreen>
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    // Check for existing request first
-    final existing = await _firestoreService.checkExistingVerificationRequest();
-    if (existing != null && mounted) {
-      setState(() {
-        _existingRequest = existing;
-        _isLoadingUser = false;
-      });
-      _animController.forward();
-      return; // Don't load form data
-    }
+    // Check for existing request from API
+    try {
+      final response = await http.get(
+        Uri.parse("https://backend.yashkadav52.workers.dev/users/${user.uid}/verification"),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data != null) {
+          if (mounted) {
+            setState(() {
+              _existingRequest = data;
+              _isLoadingUser = false;
+            });
+            _animController.forward();
+          }
+          return; // Don't load form data
+        }
+      }
+    } catch (_) {}
 
     // No existing request — load form data in parallel
     await Future.wait([_fetchUserProfile(user.uid), _fetchStations()]);
@@ -103,11 +116,12 @@ class _VerificationFormScreenState extends State<VerificationFormScreen>
   }
 
   Future<void> _fetchStations() async {
-    final stations = await _firestoreService.fetchAllStationsOnce();
+    final apiService = ref.read(stationApiProvider);
+    final stations = await apiService.getStations(1000, 0); // High limit to get all for dropdown
     if (mounted) {
       _allStations = stations
           .map(
-            (s) => _Station(id: s['id']!, name: s['name']!, city: s['city']!),
+            (s) => _Station(id: s.id, name: s.name, city: s.city),
           )
           .toList();
       _filteredStations = _allStations;
@@ -132,14 +146,27 @@ class _VerificationFormScreenState extends State<VerificationFormScreen>
     if (user == null) return;
 
     try {
-      await _firestoreService.submitVerificationRequest(
-        userId: user.uid,
-        fullName: _nameController.text.trim(),
-        stationId: _selectedStation!.id,
-        stationName: _selectedStation!.name,
-        contact: _contactController.text.trim(),
-        role: _selectedRole,
+      final response = await http.post(
+        Uri.parse("https://backend.yashkadav52.workers.dev/verifications"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "userId": user.uid,
+          "fullName": _nameController.text.trim(),
+          "stationId": _selectedStation!.id,
+          "stationName": _selectedStation!.name,
+          "contact": _contactController.text.trim(),
+          "role": _selectedRole,
+        }),
       );
+
+      if (response.statusCode != 200) {
+        throw Exception("Failed to submit to API");
+      }
+
+      final data = jsonDecode(response.body);
+      if (data['success'] != true) {
+        throw Exception(data['message'] ?? 'Unknown error');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

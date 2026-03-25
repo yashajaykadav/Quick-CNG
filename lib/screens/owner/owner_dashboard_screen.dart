@@ -7,36 +7,39 @@ import 'package:quickcng/providers/station_provider.dart';
 import 'package:quickcng/screens/owner/widgets/station_header_card.dart';
 import 'package:quickcng/screens/owner/widgets/workers_list_section.dart';
 
-// ... existing imports
-
 class OwnerDashboardScreen extends ConsumerWidget {
   const OwnerDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userProfileAsync = ref.watch(userProfileProvider);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     return userProfileAsync.when(
-      loading: () =>
-          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () => Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        body: const Center(child: CircularProgressIndicator()),
+      ),
       error: (err, stack) => Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
         appBar: AppBar(
-          // Added back button for error state
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => context.go('/home'),
           ),
-          title: const Text('Station Management'),
-          backgroundColor: Colors.green[700],
-          foregroundColor: Colors.white,
+          title: const Text('Management Error'),
         ),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              Icon(Icons.error_outline, size: 64, color: Colors.red[400]),
               const SizedBox(height: 16),
-              Text('Error: $err'),
+              Text(
+                'Error: $err',
+                style: TextStyle(color: theme.colorScheme.onSurface),
+              ),
             ],
           ),
         ),
@@ -58,16 +61,17 @@ class OwnerDashboardScreen extends ConsumerWidget {
         final stationAsync = ref.watch(stationByIdProvider(stationId));
 
         return Scaffold(
-          backgroundColor: const Color(0xFFF8F9FA),
+          // ✅ Adaptive Background (Pure Black for AMOLED)
+          backgroundColor: theme.scaffoldBackgroundColor,
           appBar: AppBar(
-            // --- Added Back Button ---
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
-              onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+              onPressed: () =>
+                  context.canPop() ? context.pop() : context.go('/home'),
             ),
             title: const Text('Station Management'),
-            backgroundColor: Colors.green[700],
-            foregroundColor: Colors.white,
+            backgroundColor: theme.appBarTheme.backgroundColor,
+            foregroundColor: theme.appBarTheme.foregroundColor,
           ),
           body: stationAsync.when(
             loading: () => const Center(child: CircularProgressIndicator()),
@@ -88,13 +92,14 @@ class OwnerDashboardScreen extends ConsumerWidget {
                       traffic: station.traffic,
                     ),
                     const SizedBox(height: 24),
+
+                    // Update Button
                     SizedBox(
                       width: double.infinity,
                       height: 54,
                       child: ElevatedButton.icon(
-                        onPressed: () {
-                          context.pushNamed('report', extra: station);
-                        },
+                        onPressed: () =>
+                            context.pushNamed('report', extra: station),
                         icon: const Icon(Icons.edit_note, size: 28),
                         label: const Text(
                           "Update Station Status",
@@ -104,10 +109,12 @@ class OwnerDashboardScreen extends ConsumerWidget {
                           ),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue[600],
+                          backgroundColor: Colors.blue[isDark ? 700 : 600],
+                          foregroundColor: Colors.white,
                         ),
                       ),
                     ),
+
                     const SizedBox(height: 32),
                     WorkersListSection(stationId: stationId),
                     const SizedBox(height: 24),
@@ -122,8 +129,10 @@ class OwnerDashboardScreen extends ConsumerWidget {
   }
 
   Widget _buildAccessDenied(BuildContext context, String message) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      // Added AppBar to Access Denied so user isn't "trapped"
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
@@ -131,7 +140,7 @@ class OwnerDashboardScreen extends ConsumerWidget {
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.black,
+        foregroundColor: theme.colorScheme.onSurface,
       ),
       body: Center(
         child: Padding(
@@ -139,31 +148,38 @@ class OwnerDashboardScreen extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.lock_outline, size: 64, color: Colors.grey),
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: theme.hintColor.withAlpha(20),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.lock_outline,
+                  size: 64,
+                  color: theme.hintColor,
+                ),
+              ),
               const SizedBox(height: 16),
               Text(
                 'Access Denied',
-                style: TextStyle(
-                  fontSize: 20,
+                style: theme.textTheme.titleLarge?.copyWith(
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.hintColor,
+                ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
               ElevatedButton.icon(
                 onPressed: () => context.go('/home'),
                 icon: const Icon(Icons.home),
                 label: const Text('Go to Home'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green[700],
-                  foregroundColor: Colors.white,
-                ),
               ),
             ],
           ),

@@ -1,27 +1,42 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:quickcng/models/station.dart';
 import 'package:quickcng/providers/location_provider.dart';
+import 'package:quickcng/services/station_api_service.dart';
 
-// Filter options
+/// ----------------------------
+/// Filter options
+/// ----------------------------
 enum StationFilter { all, radius1km, radius3km, radius5km, radius10km }
 
-// Search query state
+/// ----------------------------
+/// Search query
+/// ----------------------------
 final searchQueryProvider = StateProvider<String>((ref) => '');
 
-// Filter state
-final stationFilterProvider = StateProvider<StationFilter>((ref) {
-  return StationFilter.all;
-});
+/// ----------------------------
+/// Radius filter
+/// ----------------------------
+final stationFilterProvider =
+    StateProvider<StationFilter>((ref) => StationFilter.all);
 
-// Add a state to manage if we have more stations to load
+/// ----------------------------
+/// Pagination state
+/// ----------------------------
 final hasMoreStationsProvider = StateProvider<bool>((ref) => true);
 
+/// ----------------------------
+/// API Provider
+/// ----------------------------
+final stationApiProvider = Provider((ref) => StationApiService());
+
+/// ----------------------------
+/// Station List Notifier
+/// ----------------------------
 class StationListNotifier extends AsyncNotifier<List<Station>> {
-  DocumentSnapshot? _lastVisible;
+  int _offset = 0;
   bool _hasMore = true;
 
   @override
@@ -30,53 +45,57 @@ class StationListNotifier extends AsyncNotifier<List<Station>> {
   }
 
   Future<List<Station>> _fetchStations({required int limit}) async {
-    var query = FirebaseFirestore.instance
-        .collection('cng_stations')
-        .orderBy('updatedAt', descending: true)
-        .limit(limit);
+    final api = ref.read(stationApiProvider);
 
-    if (_lastVisible != null) {
-      query = query.startAfterDocument(_lastVisible!);
-    }
+    final stations = await api.getStations(limit, _offset);
 
-    final snapshot = await query.get();
+    _offset += limit;
 
-    if (snapshot.docs.isNotEmpty) {
-      _lastVisible = snapshot.docs.last;
-    }
-
-    if (snapshot.docs.length < limit) {
+    if (stations.length < limit) {
       _hasMore = false;
     }
-    
-    // Update the provider state asynchronously so the UI can know if it can load more
+
     ref.read(hasMoreStationsProvider.notifier).state = _hasMore;
 
-    return snapshot.docs
-        .map((doc) => Station.fromMap(doc.id, doc.data()))
-        .toList();
+    return stations;
   }
 
   Future<void> loadMore() async {
     if (!_hasMore || state.isLoading) return;
 
-    final currentList = state.value ?? [];
+    final currentStations = state.value ?? [];
 
     try {
       final newStations = await _fetchStations(limit: 20);
-      state = AsyncValue.data([...currentList, ...newStations]);
+
+      state = AsyncValue.data([
+        ...currentStations,
+        ...newStations,
+      ]);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
+
+  /// Pull-to-refresh support
+  Future<void> refresh() async {
+    _offset = 0;
+    _hasMore = true;
+    state = const AsyncLoading();
+    state = AsyncValue.data(await _fetchStations(limit: 20));
+  }
 }
 
+/// ----------------------------
+/// Station List Provider
+/// ----------------------------
 final stationListProvider =
-    AsyncNotifierProvider<StationListNotifier, List<Station>>(() {
-  return StationListNotifier();
-});
+    AsyncNotifierProvider<StationListNotifier, List<Station>>(
+        StationListNotifier.new);
 
-// Helper for compute to calculate distances off the main thread
+/// ----------------------------------------------------------
+/// Background isolate distance calculation
+/// ----------------------------------------------------------
 List<Station> _calculateDistances(Map<String, dynamic> params) {
   final stations = params['stations'] as List<Station>;
   final latitude = params['latitude'] as double;
@@ -84,23 +103,25 @@ List<Station> _calculateDistances(Map<String, dynamic> params) {
 
   return stations.map((station) {
     final distance = Geolocator.distanceBetween(
-      latitude,
-      longitude,
-      station.latitude,
-      station.longitude,
-    ) / 1000; // Convert to km
+          latitude,
+          longitude,
+          station.latitude,
+          station.longitude,
+        ) /
+        1000;
 
     return station.copyWith(distance: distance);
   }).toList();
 }
 
-// Stations with distance calculated
+/// ----------------------------------------------------------
+/// Stations with distance
+/// ----------------------------------------------------------
 final stationsWithDistanceProvider = FutureProvider<List<Station>>((ref) async {
   final stationsAsync = ref.watch(stationListProvider);
   final locationAsync = ref.watch(userLocationProvider);
 
   if (stationsAsync.value == null || locationAsync.value == null) {
-    // If we're loading or have no data yet, returning what we have via AsyncValue handling
     if (stationsAsync.value != null) return stationsAsync.value!;
     return [];
   }
@@ -108,15 +129,16 @@ final stationsWithDistanceProvider = FutureProvider<List<Station>>((ref) async {
   final stations = stationsAsync.value!;
   final position = locationAsync.value!;
 
-  // Offload heavy math to a background isolate
-  return await compute(_calculateDistances, {
+  return compute(_calculateDistances, {
     'stations': stations,
     'latitude': position.latitude,
     'longitude': position.longitude,
   });
 });
 
-// Filtered stations based on search and filter
+/// ----------------------------------------------------------
+/// Search + Radius Filtering
+/// ----------------------------------------------------------
 final filteredStationsProvider = Provider<List<Station>>((ref) {
   final filter = ref.watch(stationFilterProvider);
   final query = ref.watch(searchQueryProvider).toLowerCase().trim();
@@ -124,7 +146,6 @@ final filteredStationsProvider = Provider<List<Station>>((ref) {
 
   return stationsAsync.when(
     data: (stations) {
-      // Apply search filter
       List<Station> filtered = stations.where((station) {
         if (query.isEmpty) return true;
 
@@ -135,20 +156,20 @@ final filteredStationsProvider = Provider<List<Station>>((ref) {
             station.district.toLowerCase().contains(query);
       }).toList();
 
-      // Apply distance filter and sorting
       double maxDistance = double.infinity;
+
       switch (filter) {
         case StationFilter.radius1km:
-          maxDistance = 1.0;
+          maxDistance = 1;
           break;
         case StationFilter.radius3km:
-          maxDistance = 3.0;
+          maxDistance = 3;
           break;
         case StationFilter.radius5km:
-          maxDistance = 5.0;
+          maxDistance = 5;
           break;
         case StationFilter.radius10km:
-          maxDistance = 10.0;
+          maxDistance = 10;
           break;
         case StationFilter.all:
           maxDistance = double.infinity;
@@ -161,110 +182,21 @@ final filteredStationsProvider = Provider<List<Station>>((ref) {
             .toList();
       }
 
-      // Always sort by distance
-      filtered.sort((a, b) => (a.distance ?? double.infinity)
-          .compareTo(b.distance ?? double.infinity));
+      filtered.sort((a, b) =>
+          (a.distance ?? double.infinity).compareTo(b.distance ?? double.infinity));
 
       return filtered;
     },
     loading: () => [],
-    error: (error, stack) => [],
+    error: (_, _) => [],
   );
 });
 
-// Single station by ID
-final stationByIdProvider = StreamProvider.family<Station?, String>((ref, stationId) {
-  return FirebaseFirestore.instance
-      .collection('cng_stations')
-      .doc(stationId)
-      .snapshots()
-      .map((doc) {
-    if (!doc.exists || doc.data() == null) return null;
-    return Station.fromMap(doc.id, doc.data()!);
-  });
+/// ----------------------------------------------------------
+/// Station by ID
+/// ----------------------------------------------------------
+final stationByIdProvider =
+    FutureProvider.family<Station?, String>((ref, stationId) async {
+  final api = ref.read(stationApiProvider);
+  return api.getStation(stationId);
 });
-
-// // Stations count
-// final stationsCountProvider = Provider<int>((ref) {
-//   final stations = ref.watch(filteredStationsProvider);
-//   return stations.length;
-// });
-
-// // Available stations count
-// final availableStationsCountProvider = Provider<int>((ref) {
-//   final stationsAsync = ref.watch(stationsStreamProvider);
-
-//   return stationsAsync.when(
-//     data: (stations) => stations
-//         .where((s) => s.status == StationStatus.available)
-//         .length,
-//     loading: () => 0,
-//     error: (error, stack) => 0, // Fixed: was (_, _)
-//   );
-// });
-
-// // Provider to get calculated status for a station
-// final stationCalculatedStatusProvider = Provider.family<StationStatusResult, String>(
-//       (ref, stationId) {
-//     final reports = ref.watch(stationReportsProvider(stationId)).value ?? [];
-//     return ReportEngine.calculateStatus(reports);
-//   },
-// );
-
-// // Stations by city
-// final stationsByCityProvider = StreamProvider.family<List<Station>, String>(
-//       (ref, city) {
-//     return FirebaseFirestore.instance
-//         .collection('cng_stations')
-//         .where('city', isEqualTo: city)
-//         .orderBy('updatedAt', descending: true)
-//         .snapshots()
-//         .map((snapshot) => snapshot.docs
-//         .map((doc) => Station.fromMap(doc.id, doc.data()))
-//         .toList());
-//   },
-// );
-
-// // Stations by state
-// final stationsByStateProvider = StreamProvider.family<List<Station>, String>(
-//       (ref, state) {
-//     return FirebaseFirestore.instance
-//         .collection('cng_stations')
-//         .where('state', isEqualTo: state)
-//         .orderBy('updatedAt', descending: true)
-//         .snapshots()
-//         .map((snapshot) => snapshot.docs
-//         .map((doc) => Station.fromMap(doc.id, doc.data()))
-//         .toList());
-//   },
-// );
-
-// // Get unique cities from stations
-// final availableCitiesProvider = Provider<List<String>>((ref) {
-//   final stationsAsync = ref.watch(stationsStreamProvider);
-
-//   return stationsAsync.when(
-//     data: (stations) {
-//       final cities = stations.map((s) => s.city).toSet().toList();
-//       cities.sort();
-//       return cities;
-//     },
-//     loading: () => [],
-//     error: (error, stack) => [],
-//   );
-// });
-
-// Get unique states from stations
-// final availableStatesProvider = Provider<List<String>>((ref) {
-//   final stationsAsync = ref.watch(stationsStreamProvider);
-
-//   return stationsAsync.when(
-//     data: (stations) {
-//       final states = stations.map((s) => s.state).toSet().toList();
-//       states.sort();
-//       return states;
-//     },
-//     loading: () => [],
-//     error: (error, stack) => [],
-//   );
-// });

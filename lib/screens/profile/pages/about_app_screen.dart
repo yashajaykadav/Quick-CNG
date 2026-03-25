@@ -5,12 +5,17 @@ class AboutAppScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      // ✅ Adaptive Background (Pure Black in Dark Mode)
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('About QuickCNG'),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        // ✅ Pulls from your main.dart AppBarTheme
+        backgroundColor: theme.appBarTheme.backgroundColor,
+        foregroundColor: theme.appBarTheme.foregroundColor,
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -18,125 +23,42 @@ class AboutAppScreen extends StatelessWidget {
         child: Column(
           children: [
             // App Logo
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.green[700],
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.green.withAlpha(45),
-                    spreadRadius: 2,
-                    blurRadius: 15,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.local_gas_station,
-                color: Colors.white,
-                size: 70,
-              ),
-            ),
+            _buildLogo(),
             const SizedBox(height: 24),
 
             // App Name & Version
-            const Text(
+            Text(
               'QuickCNG',
-              style: TextStyle(
-                fontSize: 32,
+              style: theme.textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,
+                color: theme.colorScheme.onSurface,
               ),
             ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              decoration: BoxDecoration(
-                color: Colors.blue[50],
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                'Version 1.0.0',
-                style: TextStyle(
-                  color: Colors.blue[800],
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                ),
-              ),
-            ),
+            const SizedBox(height: 12),
+            _buildVersionBadge(isDark),
             const SizedBox(height: 32),
 
             // App Description
             Text(
-              "Your reliable companion for finding active CNG stations in real-time. We rely on the community and verified station owners to keep traffic and availability data completely accurate so you don't waste time waiting in huge lines.",
+              "Your reliable companion for finding active CNG stations in real-time. We rely on the community and verified station owners to keep traffic and availability data completely accurate.",
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey[700],
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withAlpha(150),
                 height: 1.6,
-                fontSize: 15,
               ),
             ),
             const SizedBox(height: 48),
 
-            // Developer Info Section
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(15),
-                    spreadRadius: 0,
-                    blurRadius: 20,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  const Text(
-                    'DEVELOPED BY',
-                    style: TextStyle(
-                      letterSpacing: 1.5,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 12,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Yash Ajay Kadav',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Crafted specifically to make your driving experience frictionless.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey[600], fontSize: 13),
-                  ),
-                  const SizedBox(height: 24),
-                  const Divider(),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildSocialButton(Icons.language, Colors.blue),
-                      const SizedBox(width: 24),
-                      _buildSocialButton(Icons.mail_outline, Colors.red),
-                      const SizedBox(width: 24),
-                      _buildSocialButton(Icons.group_outlined, Colors.purple),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+            // Developer Info Card
+            _buildDevCard(theme, isDark),
             const SizedBox(height: 40),
 
             Text(
               '© ${DateTime.now().year} QuickCNG. All rights reserved.',
-              style: TextStyle(color: Colors.grey[500], fontSize: 13),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.hintColor,
+              ),
             ),
           ],
         ),
@@ -144,14 +66,113 @@ class AboutAppScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSocialButton(IconData icon, Color color) {
+  Widget _buildLogo() {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.green[700],
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.green.withAlpha(40),
+            spreadRadius: 2,
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: const Icon(Icons.local_gas_station, color: Colors.white, size: 70),
+    );
+  }
+
+  Widget _buildVersionBadge(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.blue[900]?.withAlpha(40) : Colors.blue[50],
+        borderRadius: BorderRadius.circular(20),
+        border: isDark ? Border.all(color: Colors.blue[800]!, width: 1) : null,
+      ),
+      child: Text(
+        'Version 1.0.0',
+        style: TextStyle(
+          color: isDark ? Colors.blue[200] : Colors.blue[800],
+          fontWeight: FontWeight.bold,
+          fontSize: 14,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDevCard(ThemeData theme, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        // ✅ Uses Card Color (0xFF121212) for Dark Mode
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(20),
+        border: isDark
+            ? Border.all(color: Colors.white.withAlpha(15), width: 1)
+            : null,
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withAlpha(15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      child: Column(
+        children: [
+          Text(
+            'DEVELOPED BY',
+            style: theme.textTheme.labelSmall?.copyWith(
+              letterSpacing: 1.5,
+              fontWeight: FontWeight.bold,
+              color: theme.hintColor,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Yash Ajay Kadav',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Crafted specifically to make your driving experience frictionless.',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
+          ),
+          const SizedBox(height: 24),
+          Divider(color: theme.dividerColor.withAlpha(15)),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildSocialButton(Icons.language, Colors.blue, isDark),
+              const SizedBox(width: 24),
+              _buildSocialButton(Icons.mail_outline, Colors.red, isDark),
+              const SizedBox(width: 24),
+              _buildSocialButton(Icons.group_outlined, Colors.purple, isDark),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSocialButton(IconData icon, Color color, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withAlpha(25),
+        color: isDark ? color.withAlpha(40) : color.withAlpha(25),
         shape: BoxShape.circle,
       ),
-      child: Icon(icon, color: color, size: 24),
+      child: Icon(icon, color: isDark ? color.withAlpha(220) : color, size: 24),
     );
   }
 }

@@ -6,11 +6,7 @@ import 'package:quickcng/providers/station_provider.dart';
 
 class StationListView extends ConsumerStatefulWidget {
   final List<Station> stations;
-
-  /// Callback when navigating to station details
   final void Function(String stationId) onNavigateToDetail;
-
-  /// Callback when navigating to report screen
   final void Function(Station station) onNavigateToReport;
 
   const StationListView({
@@ -34,13 +30,16 @@ class _StationListViewState extends ConsumerState<StationListView> {
   }
 
   void _onScroll() {
+    if (!_scrollController.hasClients) return;
     final maxScroll = _scrollController.position.maxScrollExtent;
     final currentScroll = _scrollController.position.pixels;
 
-    // Load more when user scrolls near the bottom edge
     if (currentScroll >= maxScroll - 200) {
       final hasMore = ref.read(hasMoreStationsProvider);
-      if (hasMore) {
+      final state = ref.read(stationListProvider);
+
+      // Only load more if we aren't already loading
+      if (hasMore && !state.isLoading) {
         ref.read(stationListProvider.notifier).loadMore();
       }
     }
@@ -54,49 +53,66 @@ class _StationListViewState extends ConsumerState<StationListView> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    // ✅ Adaptive Empty State
     if (widget.stations.isEmpty) {
-      return const Center(child: Text("No stations found in range."));
+      return Center(
+        child: Text(
+          "No stations found in range.",
+          style: theme.textTheme.bodyLarge?.copyWith(color: theme.hintColor),
+        ),
+      );
     }
 
-    return ListView.separated(
-      controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      physics: const BouncingScrollPhysics(),
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      // Add +1 for the optional loading indicator at the bottom
-      itemCount: widget.stations.length + 1, 
-      separatorBuilder: (_, _) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        if (index == widget.stations.length) {
-          // Bottom loading indicator logic
-          final hasMore = ref.watch(hasMoreStationsProvider);
-          final isLoading = ref.watch(stationListProvider).isLoading;
-          
-          if (hasMore || isLoading) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(color: Colors.green, strokeWidth: 2),
+    return RefreshIndicator(
+      onRefresh: () => ref.read(stationListProvider.notifier).refresh(),
+      // Use the theme's primary color for the refresh spinner
+      color: Colors.green,
+      backgroundColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
+      child: ListView.separated(
+        controller: _scrollController,
+        padding: const EdgeInsets.fromLTRB(
+          16,
+          10,
+          16,
+          100,
+        ), // Extra bottom padding
+        physics: const BouncingScrollPhysics(),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        itemCount: widget.stations.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          // Bottom loading indicator
+          if (index == widget.stations.length) {
+            final isLoading = ref.watch(stationListProvider).isLoading;
+            if (isLoading) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.green,
+                      strokeWidth: 2,
+                    ),
+                  ),
                 ),
-              ),
-            );
-          } else {
-            // Reached the end of the Firestore database query entirely!
-            return const SizedBox.shrink(); 
+              );
+            }
+            return const SizedBox.shrink();
           }
-        }
 
-        final station = widget.stations[index];
-
-        return StationCard(
-          station: station,
-          onTap: () => widget.onNavigateToDetail(station.id),
-          onReport: () => widget.onNavigateToReport(station),
-        );
-      },
+          final station = widget.stations[index];
+          return StationCard(
+            station: station,
+            onTap: () => widget.onNavigateToDetail(station.id),
+            onReport: () => widget.onNavigateToReport(station),
+          );
+        },
+      ),
     );
   }
 }

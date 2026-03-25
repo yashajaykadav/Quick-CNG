@@ -15,29 +15,33 @@ class ProfileContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    final appBarColor = isDark ? Colors.black : Colors.green[700];
+    final iconColor = Colors.white;
+
     return CustomScrollView(
       slivers: [
-        // ✅ FIXED: Increased expandedHeight
         SliverAppBar(
-          expandedHeight: 250, // Increased from 280
+          expandedHeight: 250,
           pinned: true,
-          backgroundColor: Colors.green[700],
+          backgroundColor: appBarColor,
           flexibleSpace: FlexibleSpaceBar(
             background: ProfileHeader(user: user),
           ),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: Icon(Icons.arrow_back, color: iconColor),
             onPressed: () => context.pop(),
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.settings, color: Colors.white),
+              icon: Icon(Icons.settings, color: iconColor),
               onPressed: () => _showSettingsSheet(context, ref),
             ),
           ],
         ),
 
-        // Content
         SliverPadding(
           padding: const EdgeInsets.all(16),
           sliver: SliverList(

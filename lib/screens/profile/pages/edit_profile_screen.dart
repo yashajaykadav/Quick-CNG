@@ -64,16 +64,29 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(currentUserProfileProvider);
+    final userAsync = ref.watch(userProfileProvider);
 
-    if (user == null) {
-      return const Scaffold(
+    return userAsync.when(
+      loading: () => const Scaffold(
         body: Center(child: CircularProgressIndicator()),
-      );
-    }
+      ),
+      error: (err, stack) => Scaffold(
+        body: Center(child: Text('Error loading user data: $err')),
+      ),
+      data: (user) {
+        if (user == null) {
+          return const Scaffold(
+            body: Center(
+              child: Text(
+                'User Data Not Exist',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+            ),
+          );
+        }
 
-    return Scaffold(
-      appBar: AppBar(
+        return Scaffold(
+          appBar: AppBar(
         title: const Text('Edit Profile'),
         actions: [
           if (_isSaving)
@@ -167,6 +180,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           ),
         ),
       ),
+    );
+      },
     );
   }
 }

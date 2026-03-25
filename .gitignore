@@ -71,3 +71,8 @@ android/key.properties
 .env
 .env.*
 *.env
+
+# Cloudflare Backend
+backend/node_modules/
+backend/.wrangler/
+backend/dist/

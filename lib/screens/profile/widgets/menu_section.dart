@@ -7,17 +7,24 @@ import 'menu_card.dart';
 import 'menu_item.dart';
 
 Widget buildMenuSection(BuildContext context, AppUser? user) {
+  final theme = Theme.of(context);
+  final isDark = theme.brightness == Brightness.dark;
+
+  // ✅ Use onSurface for text to ensure perfect contrast in both modes
+  final headerStyle = theme.textTheme.titleMedium?.copyWith(
+    fontWeight: FontWeight.bold,
+    color: theme.colorScheme.onSurface,
+  );
+
+  // ✅ Adaptive Divider Color
+  final dividerColor = isDark
+      ? Colors.white.withAlpha(20) // Subtle white for AMOLED
+      : theme.dividerColor.withAlpha(50);
+
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      const Text(
-        'Account',
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-        ),
-      ),
+      _buildSectionLabel('Account', headerStyle),
       const SizedBox(height: 12),
       MenuCard(
         children: [
@@ -27,7 +34,7 @@ Widget buildMenuSection(BuildContext context, AppUser? user) {
             subtitle: 'Update your information',
             onTap: () => context.pushNamed('edit-profile'),
           ),
-          const Divider(height: 1),
+          Divider(height: 1, color: dividerColor, indent: 55),
           MenuItem(
             icon: Icons.assignment_outlined,
             title: 'My Reports',
@@ -35,26 +42,23 @@ Widget buildMenuSection(BuildContext context, AppUser? user) {
             onTap: () => context.pushNamed('my-reports'),
           ),
           if (user?.role == UserRole.user || user?.role == UserRole.guest) ...[
-            const Divider(height: 1),
+            Divider(height: 1, color: dividerColor, indent: 55),
             MenuItem(
               icon: Icons.verified_outlined,
               title: 'Verification Status',
               subtitle: 'Check your verification request',
-              trailing: StatusBadge(text: 'Not Verified', color: Colors.orange),
+              trailing: StatusBadge(
+                text: 'Not Verified',
+                // ✅ Refined orange for AMOLED
+                color: isDark ? Colors.orange[300]! : Colors.orange[700]!,
+              ),
               onTap: () => context.pushNamed('verification'),
             ),
           ],
         ],
       ),
-      const SizedBox(height: 16),
-      const Text(
-        'Support',
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Colors.black87,
-        ),
-      ),
+      const SizedBox(height: 24), // Increased spacing for better UI
+      _buildSectionLabel('Support', headerStyle),
       const SizedBox(height: 12),
       MenuCard(
         children: [
@@ -64,14 +68,14 @@ Widget buildMenuSection(BuildContext context, AppUser? user) {
             subtitle: 'Get answers to common questions',
             onTap: () => context.pushNamed('help'),
           ),
-          const Divider(height: 1),
+          Divider(height: 1, color: dividerColor, indent: 55),
           MenuItem(
             icon: Icons.feedback_outlined,
             title: 'Send Feedback',
             subtitle: 'Help us improve the app',
             onTap: () => context.pushNamed('feedback'),
           ),
-          const Divider(height: 1),
+          Divider(height: 1, color: dividerColor, indent: 55),
           MenuItem(
             icon: Icons.info_outline,
             title: 'About',
@@ -81,5 +85,13 @@ Widget buildMenuSection(BuildContext context, AppUser? user) {
         ],
       ),
     ],
+  );
+}
+
+// Helper for section labels
+Widget _buildSectionLabel(String text, TextStyle? style) {
+  return Padding(
+    padding: const EdgeInsets.only(left: 4),
+    child: Text(text, style: style),
   );
 }

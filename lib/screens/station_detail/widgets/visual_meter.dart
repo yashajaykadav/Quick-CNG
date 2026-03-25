@@ -4,29 +4,35 @@ import '../../../models/enums.dart';
 class VisualWaitMeter extends StatelessWidget {
   final TrafficLevel traffic;
 
-  const VisualWaitMeter({
-    super.key,
-    required this.traffic,
-  });
+  const VisualWaitMeter({super.key, required this.traffic});
 
   @override
   Widget build(BuildContext context) {
-    final trafficInfo = _getTrafficInfo(traffic);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final trafficInfo = _getTrafficInfo(traffic, isDark);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        // ✅ Uses the Card Color (0xFF121212) from your theme
+        color: theme.cardTheme.color,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: trafficInfo.color.withAlpha(50), width: 2),
-        boxShadow: [
-          BoxShadow(
-            color: trafficInfo.color.withAlpha(20),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        // ✅ AMOLED Depth: Subtle border using the status color
+        border: Border.all(
+          color: trafficInfo.color.withAlpha(isDark ? 40 : 50),
+          width: 2,
+        ),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: trafficInfo.color.withAlpha(20),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
       ),
       child: Row(
         children: [
@@ -46,12 +52,11 @@ class VisualWaitMeter extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   "Current Wait Time",
-                  style: TextStyle(
+                  style: theme.textTheme.labelSmall?.copyWith(
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF888888),
-                    fontSize: 13,
+                    color: theme.hintColor,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -67,9 +72,8 @@ class VisualWaitMeter extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   trafficInfo.subtitle,
-                  style: const TextStyle(
-                    color: Color(0xFF555555),
-                    fontSize: 14,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withAlpha(180),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -82,31 +86,37 @@ class VisualWaitMeter extends StatelessWidget {
   }
 
   ({Color color, Color bg, String title, String subtitle, IconData icon})
-      _getTrafficInfo(TrafficLevel traffic) {
+  _getTrafficInfo(TrafficLevel traffic, bool isDark) {
     switch (traffic) {
       case TrafficLevel.low:
         return (
-          color: const Color(0xFF1FAF5A),
-          bg: const Color(0xFFE8F8EF),
+          color: isDark ? Colors.green[300]! : const Color(0xFF1FAF5A),
+          bg: isDark
+              ? Colors.green[900]!.withAlpha(100)
+              : const Color(0xFFE8F8EF),
           title: 'Short Wait',
           subtitle: '0 to 10 minutes',
           icon: Icons.speed_rounded,
         );
       case TrafficLevel.normal:
         return (
-          color: const Color(0xFFE07B00),
-          bg: const Color(0xFFFFF3E0),
+          color: isDark ? Colors.orange[300]! : const Color(0xFFE07B00),
+          bg: isDark
+              ? Colors.orange[900]!.withAlpha(100)
+              : const Color(0xFFFFF3E0),
           title: 'Moderate Wait',
           subtitle: '10 to 20 minutes',
           icon: Icons.hourglass_bottom_rounded,
         );
       case TrafficLevel.high:
         return (
-          color: const Color(0xFFD32F2F),
-          bg: const Color(0xFFFFEBEE),
+          color: isDark ? Colors.red[300]! : const Color(0xFFD32F2F),
+          bg: isDark
+              ? Colors.red[900]!.withAlpha(100)
+              : const Color(0xFFFFEBEE),
+          icon: Icons.traffic_rounded,
           title: 'Long Queue',
           subtitle: 'Over 20 minutes',
-          icon: Icons.traffic_rounded,
         );
     }
   }

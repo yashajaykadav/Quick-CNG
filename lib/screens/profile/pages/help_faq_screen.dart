@@ -9,11 +9,11 @@ class HelpFaqScreen extends StatefulWidget {
 }
 
 class _HelpFaqScreenState extends State<HelpFaqScreen> {
-  final List<Map<String, String>> _faqs = [
+  final List<Map<String, String>> _allFaqs = [
     {
       'question': 'How realistic are the CNG availability status?',
       'answer':
-          'We rely on community-driven updates. When multiple users or a verified station owner updates the status, it reflects on the app within seconds. Keep an eye on the timestamps to see how recent the update is.',
+          'We rely on community-driven updates. When multiple users or a verified station owner updates the status, it reflects on the app within seconds.',
     },
     {
       'question': 'Why do I have a 30-minute cooldown on reports?',
@@ -23,124 +23,141 @@ class _HelpFaqScreenState extends State<HelpFaqScreen> {
     {
       'question': 'What is a Verified Station Owner or Worker?',
       'answer':
-          'Users who manage a physical CNG station can apply for verification. Once approved by our team, their reports bypass cooldowns and hold a higher weight in our algorithm, turning them into official updates.',
+          'Users who manage a physical CNG station can apply for verification. Once approved, their reports hold higher weight in our algorithm.',
     },
     {
       'question': 'How can I become a Station Owner?',
       'answer':
-          'Go to your Profile page and select "Get Verified". Fill out the request form with your station name and documents. Our Super Admin will verify your request shortly.',
+          'Go to your Profile page and select "Get Verified". Fill out the request form with your station name and documents.',
     },
     {
       'question': 'My app is stuck or showing incorrect info.',
       'answer':
-          'Try forcing a Hot Restart or clearing your app cache. If an issue persists, you can use the "Send Feedback" menu to notify our development team directly.',
+          'Try forcing a Hot Restart or clearing your app cache. If an issue persists, use the "Send Feedback" menu.',
     },
   ];
 
+  // Logic for filtering
+  late List<Map<String, String>> _filteredFaqs;
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredFaqs = _allFaqs;
+  }
+
+  void _filterFaqs(String query) {
+    setState(() {
+      _filteredFaqs = _allFaqs
+          .where(
+            (faq) =>
+                faq['question']!.toLowerCase().contains(query.toLowerCase()) ||
+                faq['answer']!.toLowerCase().contains(query.toLowerCase()),
+          )
+          .toList();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: CustomScrollView(
         slivers: [
+          // Adaptive SliverAppBar
           SliverAppBar(
-            expandedHeight: 200,
+            expandedHeight: 180,
             pinned: true,
-            backgroundColor: Colors.green[700],
+            backgroundColor: isDark ? Colors.black : Colors.green[700],
             elevation: 0,
             leading: IconButton(
               icon: const Icon(Icons.arrow_back, color: Colors.white),
               onPressed: () => context.pop(),
             ),
             flexibleSpace: FlexibleSpaceBar(
-              titlePadding: const EdgeInsets.only(
-                left: 20,
-                bottom: 16,
-                right: 20,
-              ),
               title: const Text(
                 'Help & FAQs',
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 20,
                 ),
               ),
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Container(color: Colors.green[700]),
-                  Positioned(
-                    right: -30,
-                    top: -20,
-                    child: Icon(
-                      Icons.help_outline,
-                      size: 150,
-                      color: Colors.white.withAlpha(20),
-                    ),
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: isDark
+                        ? [Colors.black, const Color(0xFF121212)]
+                        : [Colors.green[800]!, Colors.green[600]!],
                   ),
-                ],
+                ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      right: -20,
+                      top: -10,
+                      child: Icon(
+                        Icons.help_outline,
+                        size: 140,
+                        color: Colors.white.withAlpha(isDark ? 15 : 30),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-          // Add this SliverToBoxAdapter right below your SliverAppBar
+
+          // Search Section
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
               child: TextField(
+                onChanged: _filterFaqs,
+                style: TextStyle(color: theme.colorScheme.onSurface),
                 decoration: InputDecoration(
                   hintText: 'Search FAQs...',
                   prefixIcon: const Icon(Icons.search),
+                  // Uses the theme-aware colors we defined in main.dart
                   filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                onChanged: (value) {
-                  // Implement filtering logic on your _faqs list here
-                },
-              ),
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-              child: Text(
-                'Frequently Asked Questions',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blueGrey[800],
-                  letterSpacing: 0.5,
+                  fillColor: isDark ? const Color(0xFF1A1A1A) : Colors.white,
                 ),
               ),
             ),
           ),
+
+          // FAQ List
           SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             sliver: SliverList(
               delegate: SliverChildBuilderDelegate((context, index) {
-                final faq = _faqs[index];
-                return Card(
-                  elevation: 1,
+                final faq = _filteredFaqs[index];
+                return Container(
                   margin: const EdgeInsets.only(bottom: 12),
-                  shape: RoundedRectangleBorder(
+                  decoration: BoxDecoration(
+                    color: theme.cardTheme.color,
                     borderRadius: BorderRadius.circular(12),
+                    border: isDark
+                        ? Border.all(color: Colors.white.withAlpha(20))
+                        : null,
                   ),
                   child: Theme(
-                    data: Theme.of(
-                      context,
-                    ).copyWith(dividerColor: Colors.transparent),
+                    data: theme.copyWith(dividerColor: Colors.transparent),
                     child: ExpansionTile(
-                      iconColor: Colors.green[700],
-                      textColor: Colors.green[800],
+                      iconColor: Colors.green,
+                      collapsedIconColor: isDark
+                          ? Colors.grey[400]
+                          : Colors.grey[600],
                       title: Text(
                         faq['question']!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 15,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                       children: [
@@ -149,7 +166,7 @@ class _HelpFaqScreenState extends State<HelpFaqScreen> {
                           child: Text(
                             faq['answer']!,
                             style: TextStyle(
-                              color: Colors.grey[700],
+                              color: theme.colorScheme.onSurface.withAlpha(180),
                               height: 1.5,
                             ),
                           ),
@@ -158,24 +175,30 @@ class _HelpFaqScreenState extends State<HelpFaqScreen> {
                     ),
                   ),
                 );
-              }, childCount: _faqs.length),
+              }, childCount: _filteredFaqs.length),
             ),
           ),
+
+          // Support Card
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.all(24.0),
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withAlpha(25),
+                  color: isDark
+                      ? Colors.blue[900]!.withAlpha(30)
+                      : Colors.blue.withAlpha(25),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.blue.withAlpha(45)),
+                  border: Border.all(
+                    color: Colors.blue.withAlpha(isDark ? 80 : 45),
+                  ),
                 ),
                 child: Column(
                   children: [
                     Icon(
                       Icons.support_agent,
-                      color: Colors.blue[700],
+                      color: Colors.blue[400],
                       size: 40,
                     ),
                     const SizedBox(height: 12),
@@ -188,21 +211,13 @@ class _HelpFaqScreenState extends State<HelpFaqScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'If you cannot find the answer here, feel free to reach out to our support team.',
+                      'Feel free to reach out to our support team.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey[700], fontSize: 13),
+                      style: TextStyle(color: theme.hintColor, fontSize: 13),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton(
                       onPressed: () => context.pushNamed('feedback'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue[600],
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
                       child: const Text('Contact Support'),
                     ),
                   ],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../models/station.dart';
-import '../../../utils/map_utils.dart'; // We'll use this if available, or fallback
+import '../../../utils/map_utils.dart';
 
 class AddressSection extends StatelessWidget {
   final Station station;
@@ -9,7 +9,6 @@ class AddressSection extends StatelessWidget {
   const AddressSection({super.key, required this.station});
 
   Future<void> _openInMaps(BuildContext context) async {
-    // Try MapUtils if available, else fallback
     try {
       if (station.latitude != 0.0 && station.longitude != 0.0) {
         MapUtils.openMap(context, station.latitude, station.longitude);
@@ -17,10 +16,8 @@ class AddressSection extends StatelessWidget {
       }
     } catch (_) {}
 
-    // Fallback exactly as it was
     final uri = Uri.parse(
-      "https://www.google.com/maps/dir/?api=1"
-      "&destination=${station.latitude},${station.longitude}",
+      "https://www.google.com/maps/search/?api=1&query=${station.latitude},${station.longitude}",
     );
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -29,46 +26,54 @@ class AddressSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(15),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
       padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        // ✅ Uses the Card Color (0xFF121212) from main.dart
+        color: theme.cardTheme.color,
+        borderRadius: BorderRadius.circular(20),
+        // ✅ AMOLED Depth: Subtle border instead of shadow
+        border: isDark
+            ? Border.all(color: Colors.white.withAlpha(20), width: 1)
+            : Border.all(color: Colors.black.withAlpha(5), width: 1),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withAlpha(15),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
-          const Text(
+          Text(
             "Station Location",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1A1A1A),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           const SizedBox(height: 16),
-
-          // Address info row
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue.withAlpha(20),
+                  color: isDark
+                      ? Colors.blue[900]!.withAlpha(80)
+                      : Colors.blue.withAlpha(20),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.location_on_rounded,
-                  color: Colors.blue,
+                  color: isDark ? Colors.blue[300] : Colors.blue,
                   size: 24,
                 ),
               ),
@@ -76,9 +81,8 @@ class AddressSection extends StatelessWidget {
               Expanded(
                 child: Text(
                   station.address,
-                  style: const TextStyle(
-                    color: Color(0xFF555555),
-                    fontSize: 15,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurface.withAlpha(200),
                     height: 1.4,
                   ),
                 ),
@@ -86,30 +90,12 @@ class AddressSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-
-          // Wide navigate button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () => _openInMaps(context),
               icon: const Icon(Icons.near_me_rounded),
-              label: const Text(
-                'Get Directions',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1FAF5A), // Green action button
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
+              label: const Text('Get Directions'),
             ),
           ),
         ],

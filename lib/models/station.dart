@@ -1,34 +1,25 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:quickcng/models/enums.dart';
 import 'package:quickcng/models/report.dart';
 
 class Station {
-  final String id;
+  final String id; // We'll map stationId to this
   final String stationId;
   final String name;
   final String address;
   final String city;
   final String district;
   final String state;
-
   final double latitude;
   final double longitude;
-
   final String provider;
   final bool is24Hours;
-
   final StationStatus status;
   final TrafficLevel traffic;
-
   final DateTime updatedAt;
-
   final int reportCount;
   final List<Report> reports;
-  
-  // Status calculation metadata
   final double? confidence;
   final int? freshnessMinutes;
-
   double? distance;
 
   Station({
@@ -70,45 +61,41 @@ class Station {
     if (reports.isEmpty) return false;
 
     final latest = reports.reduce(
-          (a, b) => a.createdAt.isAfter(b.createdAt) ? a : b,
+      (a, b) => a.createdAt.isAfter(b.createdAt) ? a : b,
     );
 
-    final isRecent =
-        DateTime.now().difference(latest.createdAt).inMinutes < 60;
+    final isRecent = DateTime.now().difference(latest.createdAt).inMinutes < 60;
 
     return latest.isVerified && isRecent;
   }
 
-  /// --------------------------
-  /// Firestore Factory
-  /// --------------------------
-
-  factory Station.fromMap(String id, Map<String, dynamic> data) {
-    GeoPoint? geo = data['geo'];
-
+  /// 🟢 NEW: Cloudflare Factory
+  /// Replaces Station.fromMap to handle JSON from Workers/D1
+  factory Station.fromJson(Map<String, dynamic> json) {
     return Station(
-      id: id,
-      stationId: data['stationId'] ?? id,
-      name: data['name'] ?? '',
-      address: data['address'] ?? '',
-      city: data['city'] ?? '',
-      district: data['district'] ?? '',
-      state: data['state'] ?? '',
-      latitude: geo?.latitude ??
-          (data['latitude'] as num?)?.toDouble() ??
-          0.0,
-      longitude: geo?.longitude ??
-          (data['longitude'] as num?)?.toDouble() ??
-          0.0,
-      provider: data['provider'] ?? '',
-      is24Hours: data['is24Hours'] ?? false,
-      status: _parseStatus(data['status']),
-      traffic: _parseTraffic(data['traffic']),
-      updatedAt:
-      (data['updatedAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      reportCount: data['reportCount'] ?? 0,
-      confidence: (data['confidence'] as num?)?.toDouble(),
-      freshnessMinutes: data['freshnessMinutes'] as int?,
+      id: json['stationId'] ?? '',
+      stationId: json['stationId'] ?? '',
+      name: json['name'] ?? '',
+      address: json['address'] ?? '',
+      city: json['city'] ?? '',
+      district: json['district'] ?? '',
+      state: json['state'] ?? '',
+      // D1 returns these as doubles/nums directly
+      latitude: (json['latitude'] as num?)?.toDouble() ?? 0.0,
+      longitude: (json['longitude'] as num?)?.toDouble() ?? 0.0,
+      provider: json['provider'] ?? '',
+      // SQLite stores booleans as 0 or 1. This check handles both.
+      is24Hours: json['is24Hours'] == 1 || json['is24Hours'] == true,
+      status: _parseStatus(json['status']),
+      traffic: _parseTraffic(json['traffic']),
+      // SQLite/D1 strings look like "2026-03-16 12:00:00"
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.parse(json['updatedAt'])
+          : DateTime.now(),
+      reportCount: json['reportCount'] ?? 0,
+      confidence: (json['confidence'] as num?)?.toDouble(),
+      freshnessMinutes: json['freshnessMinutes'] as int?,
+      reports: [], // We will handle Reports in a separate SQL table later
     );
   }
 
@@ -118,11 +105,9 @@ class Station {
 
   static StationStatus _parseStatus(dynamic value) {
     if (value == null) return StationStatus.available;
-
     try {
       return StationStatus.values.firstWhere(
-            (e) => e.name.toLowerCase() ==
-            value.toString().toLowerCase(),
+        (e) => e.name.toLowerCase() == value.toString().toLowerCase(),
       );
     } catch (_) {
       return StationStatus.available;
@@ -131,48 +116,14 @@ class Station {
 
   static TrafficLevel _parseTraffic(dynamic value) {
     if (value == null) return TrafficLevel.normal;
-
     try {
       return TrafficLevel.values.firstWhere(
-            (e) => e.name.toLowerCase() ==
-            value.toString().toLowerCase(),
+        (e) => e.name.toLowerCase() == value.toString().toLowerCase(),
       );
     } catch (_) {
       return TrafficLevel.normal;
     }
   }
-
-  /// --------------------------
-  /// Firestore Map
-  /// --------------------------
-
-  Map<String, dynamic> toMap() {
-    return {
-      'name': name,
-      'address': address,
-      'city': city,
-      'district': district,
-      'state': state,
-      // 'stationId', 'latitude', and 'longitude' are omitted to save storage space
-      // since document ID and 'geo' cover them completely.
-
-      /// Recommended for geo queries
-      'geo': GeoPoint(latitude, longitude),
-
-      'provider': provider,
-      'is24Hours': is24Hours,
-      'status': status.name,
-      'traffic': traffic.name,
-      'updatedAt': FieldValue.serverTimestamp(),
-      'reportCount': reportCount,
-      if (confidence != null) 'confidence': confidence,
-      if (freshnessMinutes != null) 'freshnessMinutes': freshnessMinutes,
-    };
-  }
-
-  /// --------------------------
-  /// Copy With
-  /// --------------------------
 
   Station copyWith({
     String? id,
@@ -216,21 +167,5 @@ class Station {
       freshnessMinutes: freshnessMinutes ?? this.freshnessMinutes,
       distance: distance ?? this.distance,
     );
-  }
-
-  /// --------------------------
-  /// Debug
-  /// --------------------------
-
-  @override
-  String toString() {
-    return 'Station('
-        'id: $id, '
-        'stationId: $stationId, '
-        'name: $name, '
-        'city: $city, '
-        'status: ${status.name}, '
-        'traffic: ${traffic.name}'
-        ')';
   }
 }

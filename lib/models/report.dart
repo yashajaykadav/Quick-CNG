@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'enums.dart';
 
 class Report {
@@ -30,49 +29,56 @@ class Report {
 
   String get roleDisplayName => userRole.displayName;
 
-  int get ageMinutes =>
-      DateTime.now().difference(createdAt).inMinutes;
+  int get ageMinutes => DateTime.now().difference(createdAt).inMinutes;
 
   bool get isRecent => ageMinutes < 30;
 
   factory Report.fromMap(String id, Map<String, dynamic> data) {
     final ts = data['createdAt'];
-    final created =
-    ts is Timestamp ? ts.toDate() : DateTime.now();
+
+    DateTime created;
+
+    if (ts is int) {
+      created = DateTime.fromMillisecondsSinceEpoch(ts);
+    } else if (ts is String) {
+      created = DateTime.parse(ts);
+    } else if (ts != null && ts.runtimeType.toString() == 'Timestamp') {
+      // Use dynamic to avoid importing cloud_firestore just for this type check,
+      // since it's used in pure dart context but passed from firestore.
+      // Alternatively, import cloud_firestore:
+      created = (ts as dynamic).toDate();
+    } else {
+      created = DateTime.now();
+    }
 
     return Report(
       id: id,
       stationId: data['stationId'],
       stationName: data['stationName'],
       traffic: TrafficLevel.values.firstWhere(
-            (e) => e.name == (data['traffic'] ?? ''),
+        (e) => e.name == (data['traffic'] ?? ''),
         orElse: () => TrafficLevel.normal,
       ),
-      isAvailable: data['isAvailable'] ?? true,
+      isAvailable: (data['isAvailable'] ?? 1) == 1,
       createdAt: created,
       userId: data['userId'],
       userName: data['userName'] ?? 'Anonymous',
       userRole: UserRole.values.firstWhere(
-            (e) => e.name == (data['userRole'] ?? ''),
+        (e) => e.name == (data['userRole'] ?? ''),
         orElse: () => UserRole.guest,
       ),
     );
   }
 
-  factory Report.fromDocument(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    return Report.fromMap(doc.id, data);
-  }
-
   Map<String, dynamic> toMap() {
     return {
-      if (stationId != null) 'stationId': stationId,
-      if (stationName != null) 'stationName': stationName,
+      'stationId': stationId ?? '', // Send empty string instead of omitting
+      'stationName': stationName ?? 'Unknown Station',
       'traffic': traffic.name,
-      'isAvailable': isAvailable,
-      'createdAt': FieldValue.serverTimestamp(),
-      'userId': userId,
-      'userName': userName,
+      'isAvailable': isAvailable, // This sends true/false
+      'createdAt': createdAt.millisecondsSinceEpoch,
+      'userId': userId ?? '',
+      'userName': userName ?? 'Anonymous',
       'userRole': userRole.name,
     };
   }
@@ -113,4 +119,4 @@ class Report {
         'createdAt: $createdAt'
         ')';
   }
-}
+}
